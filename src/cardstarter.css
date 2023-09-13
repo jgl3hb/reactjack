@@ -1,0 +1,350 @@
+@charset "UTF-8";
+.card {
+  box-sizing: border-box;
+  display: inline-block;
+  margin: 5px 5px 50px 5px;
+  cursor: pointer;
+  /* Set the card's dimensions, and size it relative to
+     it's font size. */
+  font-size: inherit;
+  width: 4.0em;
+  height: 5.5em;
+  /* Add a default background color and border. */
+  background-color: #fff;
+  border-radius: 0.20em;
+  border: 1px solid #c3c3c3;
+  /* Scale and set the background settings. */
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: contain;
+  /* "Hide" any text within the element (use text to be
+     simply compliant with screen readers, etc.). */
+  text-indent: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  /* Default sizes for cards (size based off the font). */
+  /* Optional styles for cards: borderless and drop shadow. */
+  /* Not a card, but a card-shaped outline to represent a
+     droppable place, like an empty pile. */ }
+  .card.small {
+    font-size: 12px; }
+  .card.large {
+    font-size: 26px; }
+  .card.xlarge {
+    font-size: 42px; }
+  .card.no-border {
+    border: 0; }
+  .card.shadow {
+    box-shadow: 2px 2px 3px 0 rgba(41, 41, 41, 0.75); }
+  .card.outline {
+    background-image: none;
+    background-color: rgba(195, 195, 195, 0.5);
+    border: 0.15em dashed #daa520; }
+
+.card.diamonds.A,
+.card.dA,
+.card.♦A {
+  background-image: url("../public/images/diamonds/dA.svg"); }
+
+.card.diamonds.K,
+.card.dK,
+.card.♦K {
+  background-image: url("../public/images/diamonds/dK.svg"); }
+
+.card.diamonds.Q,
+.card.dQ,
+.card.♦Q {
+  background-image: url("../public/images/diamonds/dQ.svg"); }
+
+.card.diamonds.J,
+.card.dJ,
+.card.♦J {
+  background-image: url("../public/images/diamonds/dJ.svg"); }
+
+.card.diamonds.r10,
+.card.d10,
+.card.♦10 {
+  background-image: url("../public/images/diamonds/d10.svg"); }
+
+.card.diamonds.r09,
+.card.d09,
+.card.♦09 {
+  background-image: url("../public/images/diamonds/d09.svg"); }
+
+.card.diamonds.r08,
+.card.d08,
+.card.♦08 {
+  background-image: url("../public/images/diamonds/d08.svg"); }
+
+.card.diamonds.r07,
+.card.d07,
+.card.♦07 {
+  background-image: url("../public/images/diamonds/d07.svg"); }
+
+.card.diamonds.r06,
+.card.d06,
+.card.♦06 {
+  background-image: url("../public/images/diamonds/d06.svg"); }
+
+.card.diamonds.r05,
+.card.d05,
+.card.♦05 {
+  background-image: url("../public/images/diamonds/d05.svg"); }
+
+.card.diamonds.r04,
+.card.d04,
+.card.♦04 {
+  background-image: url("../public/images/diamonds/d04.svg"); }
+
+.card.diamonds.r03,
+.card.d03,
+.card.♦03 {
+  background-image: url("../public/images/diamonds/d03.svg"); }
+
+.card.diamonds.r02,
+.card.d02,
+.card.♦02 {
+  background-image: url("../public/images/diamonds/d02.svg"); }
+
+.card.hearts.A,
+.card.hA,
+.card.♥A {
+  background-image: url("../public/images/hearts/hA.svg"); }
+
+.card.hearts.K,
+.card.hK,
+.card.♥K {
+  background-image: url("../public/images/hearts/hK.svg"); }
+
+.card.hearts.Q,
+.card.hQ,
+.card.♥Q {
+  background-image: url("../public/images/hearts/hQ.svg"); }
+
+.card.hearts.J,
+.card.hJ,
+.card.♥J {
+  background-image: url("../public/images/hearts/hJ.svg"); }
+
+.card.hearts.r10,
+.card.h10,
+.card.♥10 {
+  background-image: url("../public/images/hearts/h10.svg"); }
+
+.card.hearts.r09,
+.card.h09,
+.card.♥09 {
+  background-image: url("../public/images/hearts/h09.svg"); }
+
+.card.hearts.r08,
+.card.h08,
+.card.♥08 {
+  background-image: url("../public/images/hearts/h08.svg"); }
+
+.card.hearts.r07,
+.card.h07,
+.card.♥07 {
+  background-image: url("../public/images/hearts/h07.svg"); }
+
+.card.hearts.r06,
+.card.h06,
+.card.♥06 {
+  background-image: url("../public/images/hearts/h06.svg"); }
+
+.card.hearts.r05,
+.card.h05,
+.card.♥05 {
+  background-image: url("../public/images/hearts/h05.svg"); }
+
+.card.hearts.r04,
+.card.h04,
+.card.♥04 {
+  background-image: url("../public/images/hearts/h04.svg"); }
+
+.card.hearts.r03,
+.card.h03,
+.card.♥03 {
+  background-image: url("../public/images/hearts/h03.svg"); }
+
+.card.hearts.r02,
+.card.h02,
+.card.♥02 {
+  background-image: url("../public/images/hearts/h02.svg"); } 
+
+.card.spades.A,
+.card.sA,
+.card.♠A {
+  background-image: url("../public/images/spades/sA.svg"); }
+
+.card.spades.K,
+.card.sK,
+.card.♠K {
+  background-image: url("../public/images/spades/sK.svg"); }
+
+.card.spades.Q,
+.card.sQ,
+.card.♠Q {
+  background-image: url("../public/images/spades/sQ.svg"); }
+
+.card.spades.J,
+.card.sJ,
+.card.♠J {
+  background-image: url("../public/images/spades/sJ.svg"); }
+
+.card.spades.r10,
+.card.s10,
+.card.♠10 {
+  background-image: url("../public/images/spades/s10.svg"); }
+
+.card.spades.r09,
+.card.s09,
+.card.♠09 {
+  background-image: url("../public/images/spades/s09.svg"); }
+
+.card.spades.r08,
+.card.s08,
+.card.♠08 {
+  background-image: url("../public/images/spades/s08.svg"); }
+
+.card.spades.r07,
+.card.s07,
+.card.♠07 {
+  background-image: url("../public/images/spades/s07.svg"); }
+
+.card.spades.r06,
+.card.s06,
+.card.♠06 {
+  background-image: url("../public/images/spades/s06.svg"); }
+
+.card.spades.r05,
+.card.s05,
+.card.♠05 {
+  background-image: url("../public/images/spades/s05.svg"); }
+
+.card.spades.r04,
+.card.s04,
+.card.♠04 {
+  background-image: url("../public/images/spades/s04.svg"); }
+
+.card.spades.r03,
+.card.s03,
+.card.♠03 {
+  background-image: url("../public/images/spades/s03.svg"); }
+
+.card.spades.r02,
+.card.s02,
+.card.♠02 {
+  background-image: url("../public/images/spades/s02.svg"); }
+
+.card.clubs.A,
+.card.cA,
+.card.♣A {
+  background-image: url("../public/images/clubs/cA.svg"); }
+
+.card.clubs.K,
+.card.cK,
+.card.♣K {
+  background-image: url("../public/images/clubs/cK.svg"); }
+
+.card.clubs.Q,
+.card.cQ,
+.card.♣Q {
+  background-image: url("../public/images/clubs/cQ.svg"); }
+
+.card.clubs.J,
+.card.cJ,
+.card.♣J {
+  background-image: url("../public/images/clubs/cJ.svg"); }
+
+.card.clubs.r10,
+.card.c10,
+.card.♣10 {
+  background-image: url("../public/images/clubs/c10.svg"); }
+
+.card.clubs.r09,
+.card.c09,
+.card.♣09 {
+  background-image: url("../public/images/clubs/c09.svg"); }
+
+.card.clubs.r08,
+.card.c08,
+.card.♣08 {
+  background-image: url("../public/images/clubs/c08.svg"); }
+
+.card.clubs.r07,
+.card.c07,
+.card.♣07 {
+  background-image: url("../public/images/clubs/c07.svg"); }
+
+.card.clubs.r06,
+.card.c06,
+.card.♣06 {
+  background-image: url("../public/images/clubs/c06.svg"); }
+
+.card.clubs.r05,
+.card.c05,
+.card.♣05 {
+  background-image: url("../public/images/clubs/c05.svg"); }
+
+.card.clubs.r04,
+.card.c04,
+.card.♣04 {
+  background-image: url("../public/images/clubs/c04.svg"); }
+
+.card.clubs.r03,
+.card.c03,
+.card.♣03 {
+  background-image: url("../public/images/clubs/c03.svg"); }
+
+.card.clubs.r02,
+.card.c02,
+.card.♣02 {
+  background-image: url("../public/images/clubs/c02.svg"); }
+
+.card.joker {
+  background-image: url("../public/images/jokers/joker.svg"); }
+
+.card.joker-black {
+  background-image: url("../public/images/jokers/joker-black.svg"); }
+
+.card.joker-red {
+  background-image: url("../public/images/jokers/joker-red.svg"); }
+
+.card.back {
+  background-image: url("../public/images/backs/blue.svg"); }
+
+.card.back-blue {
+  background-image: url("../public/images/backs/blue.svg"); }
+
+.card.back-red {
+  background-image: url("../public/images/backs/red.svg"); }
+
+/* Re-orients the cards for different directions. While
+they are symmetric, it's still important to orient
+them correctly in case text or other symbols are
+layered on them with CSS pseudo-selectors, new
+classes/rules, etc.  */
+
+
+.card.west,
+.card.W {
+  transform: rotate(90deg);
+  margin: auto 0.75em; }
+  .card.west.shadow,
+  .card.W.shadow {
+    box-shadow: 2px -2px 3px 0 rgba(41, 41, 41, 0.75); }
+
+.card.north,
+.card.N {
+  transform: rotate(180deg); }
+  .card.north.shadow,
+  .card.N.shadow {
+    box-shadow: -2px -2px 3px 0 rgba(41, 41, 41, 0.75); }
+
+.card.east,
+.card.E {
+  transform: rotate(270deg);
+  margin: auto 0.75em; }
+  .card.east.shadow,
+  .card.E.shadow {
+    box-shadow: -2px 2px 3px 0 rgba(41, 41, 41, 0.75); }
