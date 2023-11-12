@@ -96,34 +96,45 @@ const Blackjack = () => {
   };
 
   const initialDeal = () => {
-    let tempPlayerHand = [];
-    let tempDealerHand = [];
-    for (let i = 0; i < 2; i++) {
-      tempPlayerHand.push(selectCard());
-      tempDealerHand.push(selectCard());
-    }
-    setPlayerHand(tempPlayerHand);
-    setDealerHand(tempDealerHand);
-
-    const playerHasBlackjack = checkForBlackjack(tempPlayerHand.map(card => card.slice(1)));
-    const dealerHasBlackjack = checkForBlackjack(tempDealerHand.map(card => card.slice(1)));
-
-    if (playerHasBlackjack || dealerHasBlackjack) {
-      setGameOver(true);
-      if (playerHasBlackjack) {
-        setStatus("Player has Blackjack!");
-        setPlayerBank(playerBank + currentBet * 1.5); // Usually blackjack pays 3:2
+    if (!gameOver && playerHand.length === 0 && dealerHand.length === 0) { 
+      let tempPlayerHand = [];
+      let tempDealerHand = [];
+      for (let i = 0; i < 2; i++) { // Deal initial two cards each for player and dealer
+        tempPlayerHand.push(selectCard());
+        tempDealerHand.push(selectCard());
       }
-      if (dealerHasBlackjack) {
-        setStatus(dealerHasBlackjack ? "Dealer has Blackjack!" : status);
-      }
-      if (playerHasBlackjack && dealerHasBlackjack) {
-        setStatus("Both Player and Dealer have Blackjack! It's a tie.");
+      setPlayerHand(tempPlayerHand);
+      setDealerHand(tempDealerHand);
+  
+      // Checking for blackjack should be done after the deal
+      const playerBlackjack = checkForBlackjack(tempPlayerHand);
+      const dealerBlackjack = checkForBlackjack(tempDealerHand);
+  
+      // Update state based on blackjack check
+      if (playerBlackjack || dealerBlackjack) {
+        setGameOver(true); // End the game if blackjack is dealt
+        setStatus(playerBlackjack ? "Player has Blackjack!" : "Dealer has Blackjack!");
+        if (playerBlackjack) {
+          setPlayerBank(playerBank + currentBet * 1.5); // Payout for blackjack
+        }
+        if (dealerBlackjack) {
+          // Dealer blackjack logic, if different from player's
+        }
+        if (playerBlackjack && dealerBlackjack) {
+          setStatus("Both Player and Dealer have Blackjack! It's a tie.");
+        }
+      } else {
+        setStatus('Hit or Stand?');
       }
     } else {
-      setStatus('Hit or Stand?');
+      console.log('Deal button clicked, but game is over or hands not empty.');
     }
   };
+  
+  
+  
+  
+  
 
 
   const hit = () => {
@@ -196,12 +207,17 @@ const Blackjack = () => {
 
   return (
     <div className="min-h-screen p-4 flex flex-col items-center justify-center">
-      <div className="text-white mb-4" id="status">{status}</div>
+      <div className="text-white text-xl mb-4" id="status">{status}</div>
       <div className="flex justify-center mb-4" id="dealer-cards">{renderCard(dealerHand, 'dealer-cards')}</div>
       <div className="flex justify-center mb-4" id="player-cards">{renderCard(playerHand, 'player-cards')}</div>
-      <div className="text-white mb-4" id="playerhandvalue">{playerScore}</div>
+      <div className="text-white text-4xl mb-4" id="playerhandvalue">{playerScore}</div>
       <div className="flex space-x-4 mb-4">
-        <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={initialDeal}>Deal</button>
+        <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          onClick={() => {
+            if (!gameOver) {
+              initialDeal();
+            }
+          }}>Deal</button>
         <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={hit}>Hit</button>
         <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={stand}>Stand</button>
         <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={resetGame}>Reset</button>
@@ -224,7 +240,9 @@ const Blackjack = () => {
           <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-full w-8 h-8"></span>
         </button>
       </div>
-      <div className="text-white mb-4" id="playerBank">${playerBank}</div>
+      <div className="text-white text-4xl mb-4" id="playerBank">${playerBank}</div>
+      <div className="text-white text-4xl mb-4" id="playerBank">Blackjack pays 3/2</div>
+
       </div>
   );
 };
