@@ -88,6 +88,13 @@ const Blackjack = () => {
     callback(newHand);
   };
 
+// ...
+
+  const checkForBlackjack = (hand) => {
+    // Check if the hand is a blackjack which is an Ace with a '10', 'J', 'Q', or 'K'
+    return hand.includes('A') && (hand.includes('10') || hand.includes('J') || hand.includes('Q') || hand.includes('K'));
+  };
+
   const initialDeal = () => {
     let tempPlayerHand = [];
     let tempDealerHand = [];
@@ -97,11 +104,30 @@ const Blackjack = () => {
     }
     setPlayerHand(tempPlayerHand);
     setDealerHand(tempDealerHand);
-    setStatus('Hit or Stand?');
+
+    const playerHasBlackjack = checkForBlackjack(tempPlayerHand.map(card => card.slice(1)));
+    const dealerHasBlackjack = checkForBlackjack(tempDealerHand.map(card => card.slice(1)));
+
+    if (playerHasBlackjack || dealerHasBlackjack) {
+      setGameOver(true);
+      if (playerHasBlackjack) {
+        setStatus("Player has Blackjack!");
+        setPlayerBank(playerBank + currentBet * 1.5); // Usually blackjack pays 3:2
+      }
+      if (dealerHasBlackjack) {
+        setStatus(dealerHasBlackjack ? "Dealer has Blackjack!" : status);
+      }
+      if (playerHasBlackjack && dealerHasBlackjack) {
+        setStatus("Both Player and Dealer have Blackjack! It's a tie.");
+      }
+    } else {
+      setStatus('Hit or Stand?');
+    }
   };
 
+
   const hit = () => {
-    if (!gameOver) {
+    if (!gameOver && playerHand.length > 0) { 
       dealCard(playerHand, (newHand) => {
         setPlayerHand(newHand);
         const newScore = computeHandTotal(newHand);
@@ -115,7 +141,7 @@ const Blackjack = () => {
   };
 
   const stand = () => {
-    if (!gameOver) {
+    if (!gameOver && playerHand.length > 0) {
       let newDealerHand = [...dealerHand];
       while (computeHandTotal(newDealerHand) <= 17) {
         newDealerHand.push(selectCard());
@@ -169,7 +195,7 @@ const Blackjack = () => {
   }, [playerHand, dealerHand]);
 
   return (
-    <div className="min-h-screen bg-green-600 p-4 flex flex-col items-center justify-center">
+    <div className="min-h-screen p-4 flex flex-col items-center justify-center">
       <div className="text-white mb-4" id="status">{status}</div>
       <div className="flex justify-center mb-4" id="dealer-cards">{renderCard(dealerHand, 'dealer-cards')}</div>
       <div className="flex justify-center mb-4" id="player-cards">{renderCard(playerHand, 'player-cards')}</div>
@@ -181,13 +207,25 @@ const Blackjack = () => {
         <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={resetGame}>Reset</button>
       </div>
       <div className="flex space-x-4 mb-4" id="betting-area">
-        <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={() => handleBet(1)}>Bet 1</button>
-        <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={() => handleBet(5)}>Bet 5</button>
-        <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={() => handleBet(25)}>Bet 25</button>
-        <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={() => handleBet(100)}>Bet 100</button>
+        <button className="relative bg-red-500 text-black font-bold py-2 rounded-full w-12 h-12" onClick={() => handleBet(1)}>
+          <span className="relative z-10">$1</span>
+          <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-full" style={{ width: '70%', height: '70%' }}></span>
+        </button>
+        <button className="relative bg-blue-500 text-black font-bold py-2 rounded-full w-12 h-12" onClick={() => handleBet(5)}>
+          <span className="relative z-10">$5</span>
+          <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-full w-8 h-8"></span>
+        </button>
+        <button className="relative bg-green-500 text-black font-bold py-2 rounded-full w-12 h-12" onClick={() => handleBet(25)}>
+          <span className="relative z-10">$25</span>
+          <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-full w-8 h-8"></span>
+        </button>
+        <button className="relative bg-yellow-500 text-black text-xs font-bold py-2 rounded-full w-12 h-12" onClick={() => handleBet(100)}>
+          <span className="relative z-10">$100</span>
+          <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-full w-8 h-8"></span>
+        </button>
       </div>
       <div className="text-white mb-4" id="playerBank">${playerBank}</div>
-    </div>
+      </div>
   );
 };
 
