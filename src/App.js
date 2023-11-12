@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 import './cardstarter.css';
 
+
+
 const deckData = [
   "dA", "dQ", "dK", "dJ", "d10", "d09", "d08", "d07", "d06", "d05", "d04", "d03", "d02",
   "hA", "hQ", "hK", "hJ", "h10", "h09", "h08", "h07", "h06", "h05", "h04", "h03", "h02",
@@ -167,22 +169,24 @@ const Blackjack = () => {
   }, [playerHand, dealerHand]);
 
   return (
-    <div>
-      <div id="status">{status}</div>
-      <div id="dealer-cards">{renderCard(dealerHand, 'dealer-cards')}</div>
-      <div id="player-cards">{renderCard(playerHand, 'player-cards')}</div>
-      <div id="playerhandvalue">{playerScore}</div>
-      <button onClick={initialDeal}>Deal</button>
-      <button onClick={hit}>Hit</button>
-      <button onClick={stand}>Stand</button>
-      <button onClick={resetGame}>Reset</button>
-      <div id="betting-area">
-        <button onClick={() => handleBet(1)}>Bet 1</button>
-        <button onClick={() => handleBet(5)}>Bet 5</button>
-        <button onClick={() => handleBet(25)}>Bet 25</button>
-        <button onClick={() => handleBet(100)}>Bet 100</button>
+    <div className="min-h-screen bg-green-600 p-4 flex flex-col items-center justify-center">
+      <div className="text-white mb-4" id="status">{status}</div>
+      <div className="flex justify-center mb-4" id="dealer-cards">{renderCard(dealerHand, 'dealer-cards')}</div>
+      <div className="flex justify-center mb-4" id="player-cards">{renderCard(playerHand, 'player-cards')}</div>
+      <div className="text-white mb-4" id="playerhandvalue">{playerScore}</div>
+      <div className="flex space-x-4 mb-4">
+        <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={initialDeal}>Deal</button>
+        <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={hit}>Hit</button>
+        <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={stand}>Stand</button>
+        <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={resetGame}>Reset</button>
       </div>
-      <div id="playerBank">${playerBank}</div>
+      <div className="flex space-x-4 mb-4" id="betting-area">
+        <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={() => handleBet(1)}>Bet 1</button>
+        <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={() => handleBet(5)}>Bet 5</button>
+        <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={() => handleBet(25)}>Bet 25</button>
+        <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={() => handleBet(100)}>Bet 100</button>
+      </div>
+      <div className="text-white mb-4" id="playerBank">${playerBank}</div>
     </div>
   );
 };
