@@ -17,7 +17,7 @@ const Blackjack = () => {
   const [playerBank, setPlayerBank] = useState(500);
   const [currentBet, setCurrentBet] = useState(0);
   const [deck, setDeck] = useState(deckData);
-  const [status, setStatus] = useState('');
+  const [status, setStatus] = useState('Player, make a bet');
   const [playerScore, setPlayerScore] = useState(0);
   const [dealerScore, setDealerScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
@@ -207,10 +207,12 @@ const Blackjack = () => {
 
   return (
     <div className="min-h-screen p-4 flex flex-col items-center justify-center">
-      <div className="text-white text-xl mb-4" id="status">{status}</div>
-      <div className="flex justify-center mb-4" id="dealer-cards">{renderCard(dealerHand, 'dealer-cards')}</div>
-      <div className="flex justify-center mb-4" id="player-cards">{renderCard(playerHand, 'player-cards')}</div>
-      <div className="text-white text-4xl mb-4" id="playerhandvalue">{playerScore}</div>
+      <div className="flex justify-center pt-4" id="dealer-cards">{renderCard(dealerHand, 'dealer-cards')}</div>
+      <div className="text-white text-4xl mb-4" id="playerBank">Blackjack</div>
+      <div className="text-white text-4xl mb-4" id="playerBank">Pays 3 to 2</div>
+      <div className="text-white text-xl" id="status">{status}</div>
+      <div className="flex justify-center" id="player-cards">{renderCard(playerHand, 'player-cards')}</div>
+      <div className="text-white text-4xl" id="playerhandvalue">{playerScore}</div>
       <div className="flex space-x-4 mb-4">
         <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
           onClick={() => {
@@ -241,7 +243,6 @@ const Blackjack = () => {
         </button>
       </div>
       <div className="text-white text-4xl mb-4" id="playerBank">${playerBank}</div>
-      <div className="text-white text-4xl mb-4" id="playerBank">Blackjack pays 3/2</div>
 
       </div>
   );
