@@ -32,22 +32,22 @@ export const useDeck = (numDecks = DECK_CONFIG.NUM_DECKS) => {
 
   /**
    * Draws a card from the deck, reshuffles if needed
+   * FIXED: Uses setState callback to capture drawn card properly
    */
   const drawCard = useCallback(() => {
     let drawnCard = null;
 
     setDeck(currentDeck => {
-      // Check if we need to reshuffle
-      if (currentDeck.length <= DECK_CONFIG.RESHUFFLE_THRESHOLD) {
+      let deckToDrawFrom = [...currentDeck];
+      // Check if we need to reshuffle BEFORE drawing
+      if (deckToDrawFrom.length <= DECK_CONFIG.RESHUFFLE_THRESHOLD) {
         console.log('Reshuffling deck...');
-        const newDeck = createShuffledDeck(numDecks);
-        drawnCard = newDeck[0];
-        return newDeck.slice(1);
+        deckToDrawFrom = createShuffledDeck(numDecks);
       }
 
-      // Draw from current deck
-      drawnCard = currentDeck[0];
-      return currentDeck.slice(1);
+      // Draw from the determined deck
+      drawnCard = deckToDrawFrom[0];
+      return deckToDrawFrom.slice(1); // Update state with the sliced deck
     });
 
     return drawnCard;
