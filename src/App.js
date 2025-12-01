@@ -7,7 +7,8 @@ import {
   isBlackjack,
   determineWinner,
   shouldDealerHit,
-  canDoubleDown as checkCanDoubleDown
+  canDoubleDown as checkCanDoubleDown,
+  canSplit as checkCanSplit
 } from './hooks/useBlackjackGame';
 import { STARTING_BANK, BET_DENOMINATIONS, GAME_STATES } from './utils/gameConstants';
 import ChipButton from './components/ChipButton';
@@ -15,8 +16,11 @@ import GameControls from './components/GameControls';
 import Hand from './components/Hand';
 
 const Blackjack = () => {
-  // Game state
-  const [playerHand, setPlayerHand] = useState([]);
+  // Game state - Modified to support multiple hands for splits
+  const [playerHands, setPlayerHands] = useState([[]]); // Array of hands
+  const [activeHandIndex, setActiveHandIndex] = useState(0); // Which hand is being played
+  const [handBets, setHandBets] = useState([]); // Bet for each hand
+  const [handStatuses, setHandStatuses] = useState([]); // Status for each hand (playing, stood, busted, won, lost)
   const [dealerHand, setDealerHand] = useState([]);
   const [playerBank, setPlayerBank] = useState(STARTING_BANK);
   const [currentBet, setCurrentBet] = useState(0);
@@ -27,8 +31,9 @@ const Blackjack = () => {
   // Deck management
   const { drawCard, resetDeck, cardsRemaining } = useDeck();
 
-  // Calculate hand values
-  const playerScore = calculateHandValue(playerHand);
+  // Get  current active hand
+  const currentHand = playerHands[activeHandIndex] || [];
+  const currentHandScore = calculateHandValue(currentHand);
   const dealerScore = calculateHandValue(dealerHand);
 
   /**
@@ -41,7 +46,10 @@ const Blackjack = () => {
     }
 
     if (playerBank >= betAmount) {
-      setPlayerHand([]);
+      setPlayerHands([[]]);
+      setActiveHandIndex(0);
+      setHandBets([betAmount]);
+      setHandStatuses(['playing']);
       setDealerHand([]);
       setShowDealerCard(false);
       setStatus(`Bet placed: $${betAmount}. Click Deal to start!`);
@@ -55,7 +63,6 @@ const Blackjack = () => {
 
   /**
    * Deal initial cards (2 to player, 2 to dealer)
-   * FIXED: Proper blackjack detection and payout
    */
   const initialDeal = useCallback(() => {
     if (gameState !== GAME_STATES.DEALING) {
@@ -66,8 +73,10 @@ const Blackjack = () => {
     const newPlayerHand = [drawCard(), drawCard()];
     const newDealerHand = [drawCard(), drawCard()];
 
-    setPlayerHand(newPlayerHand);
+    setPlayerHands([newPlayerHand]);
     setDealerHand(newDealerHand);
+    setActiveHandIndex(0);
+    setHandStatuses(['playing']);
 
     // Check for blackjacks
     const playerBJ = isBlackjack(newPlayerHand);
@@ -88,45 +97,78 @@ const Blackjack = () => {
       setStatus(result.message);
       setPlayerBank(prev => prev + result.payout);
       setGameState(GAME_STATES.GAME_OVER);
+      setHandStatuses([result.status]);
     } else {
-      setStatus('Hit or Stand?');
+      setStatus('Hit, Stand, or Double Down?');
       setGameState(GAME_STATES.PLAYER_TURN);
     }
   }, [gameState, drawCard, currentBet]);
 
   /**
-   * Player hits (draws a card)
-   * FIXED: Proper state management and bust detection
+   * Player hits (draws a card) for current active hand
    */
   const hit = useCallback(() => {
     if (gameState !== GAME_STATES.PLAYER_TURN) return;
+    if (handStatuses[activeHandIndex] !== 'playing') return;
 
-    const newHand = [...playerHand, drawCard()];
-    setPlayerHand(newHand);
+    const newHands = [...playerHands];
+    newHands[activeHandIndex] = [...newHands[activeHandIndex], drawCard()];
+    setPlayerHands(newHands);
 
-    const newScore = calculateHandValue(newHand);
+    const newScore = calculateHandValue(newHands[activeHandIndex]);
 
     if (newScore > 21) {
-      // Player busted
-      setShowDealerCard(true);
-      setStatus("Player Busts! Dealer wins.");
-      setGameState(GAME_STATES.GAME_OVER);
+      // Hand busted
+      const newStatuses = [...handStatuses];
+      newStatuses[activeHandIndex] = 'busted';
+      setHandStatuses(newStatuses);
+
+      // Move to next hand or dealer
+      moveToNextHand(newHands, newStatuses);
     } else if (newScore === 21) {
       // Auto-stand on 21
-      stand(newHand);
+      stand();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameState, playerHand, drawCard]);
+  }, [gameState, playerHands, activeHandIndex, handStatuses, drawCard]);
 
   /**
-   * Player stands (dealer's turn)
-   * FIXED: Dealer now correctly stands on 17, not hits
+   * Player stands (end turn for current hand)
    */
-  const stand = useCallback((handToUse = null) => {
-    const currentPlayerHand = handToUse || playerHand;
-
+  const stand = useCallback(() => {
     if (gameState !== GAME_STATES.PLAYER_TURN) return;
+    if (handStatuses[activeHandIndex] !== 'playing') return;
 
+    const newStatuses = [...handStatuses];
+    newStatuses[activeHandIndex] = 'stood';
+    setHandStatuses(newStatuses);
+
+    // Move to next hand or dealer's turn
+    moveToNextHand(playerHands, newStatuses);
+  }, [gameState, playerHands, activeHandIndex, handStatuses]);
+
+  /**
+   * Move to next hand or trigger dealer's turn
+   */
+  const moveToNextHand = useCallback((hands, statuses) => {
+    // Find next hand that needs to be played
+    const nextHandIndex = statuses.findIndex((status, idx) =>
+      idx > activeHandIndex && status === 'playing'
+    );
+
+    if (nextHandIndex !== -1) {
+      // Move to next hand
+      setActiveHandIndex(nextHandIndex);
+      setStatus(`Playing hand ${nextHandIndex + 1} of ${hands.length}`);
+    } else {
+      // All hands played, dealer's turn
+      playDealerHand(hands, statuses);
+    }
+  }, [activeHandIndex]);
+
+  /**
+   * Dealer plays their hand
+   */
+  const playDealerHand = useCallback((hands, statuses) => {
     setGameState(GAME_STATES.DEALER_TURN);
     setShowDealerCard(true);
 
@@ -134,7 +176,6 @@ const Blackjack = () => {
     let newDealerHand = [...dealerHand];
     let dealerValue = calculateHandValue(newDealerHand);
 
-    // FIXED: Dealer hits on < 17, stands on >= 17
     while (shouldDealerHit(dealerValue)) {
       newDealerHand.push(drawCard());
       dealerValue = calculateHandValue(newDealerHand);
@@ -142,57 +183,141 @@ const Blackjack = () => {
 
     setDealerHand(newDealerHand);
 
-    // Determine winner
-    const result = determineWinner(
-      calculateHandValue(currentPlayerHand),
-      dealerValue,
-      currentPlayerHand,
-      newDealerHand,
-      currentBet
-    );
+    // Determine winner for each hand
+    let totalPayout = 0;
+    const finalStatuses = statuses.map((status, idx) => {
+      if (status === 'busted') return 'lost';
 
-    setStatus(result.message);
-    setPlayerBank(prev => prev + result.payout);
+      const result = determineWinner(
+        calculateHandValue(hands[idx]),
+        dealerValue,
+        hands[idx],
+        newDealerHand,
+        handBets[idx]
+      );
+
+      totalPayout += result.payout;
+      return result.status === 'win' ? 'won' : result.status === 'push' ? 'push' : 'lost';
+    });
+
+    setHandStatuses(finalStatuses);
+    setPlayerBank(prev => prev + totalPayout);
+
+    // Set overall status message
+    const wins = finalStatuses.filter(s => s === 'won').length;
+    const losses = finalStatuses.filter(s => s === 'lost').length;
+    const pushes = finalStatuses.filter(s => s === 'push').length;
+
+    if (wins > 0 && losses === 0) {
+      setStatus(`You won ${wins} hand(s)!`);
+    } else if (losses > 0 && wins === 0) {
+      setStatus(`Dealer won ${losses} hand(s).`);
+    } else if (wins > 0 && losses > 0) {
+      setStatus(`Mixed results: ${wins} won, ${losses} lost${pushes > 0 ? `, ${pushes} pushed` : ''}`);
+    } else {
+      setStatus(`All hands pushed!`);
+    }
+
     setGameState(GAME_STATES.GAME_OVER);
-  }, [gameState, playerHand, dealerHand, drawCard, currentBet]);
+  }, [dealerHand, drawCard, handBets]);
 
   /**
    * Double down - double bet, take one card, then stand
    */
   const doubleDown = useCallback(() => {
     if (gameState !== GAME_STATES.PLAYER_TURN) return;
-    if (!checkCanDoubleDown(playerHand)) return;
-    if (playerBank < currentBet) {
+    if (!checkCanDoubleDown(currentHand)) return;
+    if (handStatuses[activeHandIndex] !== 'playing') return;
+
+    const betToAdd = handBets[activeHandIndex];
+    if (playerBank < betToAdd) {
       setStatus('Insufficient funds to double down!');
       return;
     }
 
-    // Double the bet
-    setPlayerBank(prev => prev - currentBet);
-    setCurrentBet(prev => prev * 2);
+    // Double the bet for this hand
+    setPlayerBank(prev => prev - betToAdd);
+    const newBets = [...handBets];
+    newBets[activeHandIndex] = newBets[activeHandIndex] * 2;
+    setHandBets(newBets);
 
     // Take exactly one card
-    const newHand = [...playerHand, drawCard()];
-    setPlayerHand(newHand);
+    const newHands = [...playerHands];
+    newHands[activeHandIndex] = [...newHands[activeHandIndex], drawCard()];
+    setPlayerHands(newHands);
 
-    const newScore = calculateHandValue(newHand);
+    const newScore = calculateHandValue(newHands[activeHandIndex]);
 
+    const newStatuses = [...handStatuses];
     if (newScore > 21) {
       // Busted
-      setShowDealerCard(true);
-      setStatus("Player Busts! Dealer wins.");
-      setGameState(GAME_STATES.GAME_OVER);
+      newStatuses[activeHandIndex] = 'busted';
+      setHandStatuses(newStatuses);
+      moveToNextHand(newHands, newStatuses);
     } else {
       // Auto-stand after double down
-      setTimeout(() => stand(newHand), 500);
+      newStatuses[activeHandIndex] = 'stood';
+      setHandStatuses(newStatuses);
+      setTimeout(() => moveToNextHand(newHands, newStatuses), 500);
     }
-  }, [gameState, playerHand, playerBank, currentBet, drawCard, stand]);
+  }, [gameState, currentHand, playerBank, handBets, activeHandIndex, handStatuses, playerHands, drawCard, moveToNextHand]);
+
+  /**
+   * Split - split matching cards into two hands
+   */
+  const split = useCallback(() => {
+    if (gameState !== GAME_STATES.PLAYER_TURN) return;
+    if (!checkCanSplit(currentHand)) return;
+    if (handStatuses[activeHandIndex] !== 'playing') return;
+    if (playerHands.length >= 4) {
+      setStatus('Maximum 4 hands reached!');
+      return;
+    }
+
+    const betToAdd = handBets[activeHandIndex];
+    if (playerBank < betToAdd) {
+      setStatus('Insufficient funds to split!');
+      return;
+    }
+
+    // Deduct additional bet
+    setPlayerBank(prev => prev - betToAdd);
+
+    // Split the hand
+    const newHands = [...playerHands];
+    const handToSplit = newHands[activeHandIndex];
+
+    // Create two new hands, each with one card from the split
+    const hand1 = [handToSplit[0], drawCard()];
+    const hand2 = [handToSplit[1], drawCard()];
+
+    // Replace current hand with first split hand
+    newHands[activeHandIndex] = hand1;
+    // Insert second split hand right after
+    newHands.splice(activeHandIndex + 1, 0, hand2);
+
+    setPlayerHands(newHands);
+
+    // Update bets and statuses
+    const newBets = [...handBets];
+    newBets.splice(activeHandIndex + 1, 0, betToAdd);
+    setHandBets(newBets);
+
+    const newStatuses = [...handStatuses];
+    newStatuses.splice(activeHandIndex + 1, 0, 'playing');
+    setHandStatuses(newStatuses);
+
+    setStatus(`Hand split! Playing hand 1 of ${newHands.length}`);
+  }, [gameState, currentHand, playerBank, handBets, activeHandIndex, handStatuses, playerHands, drawCard]);
 
   /**
    * Reset game to initial state
    */
   const resetGame = useCallback(() => {
-    setPlayerHand([]);
+    setPlayerHands([[]]);
+    setActiveHandIndex(0);
+    setHandBets([]);
+    setHandStatuses([]);
     setDealerHand([]);
     setPlayerBank(STARTING_BANK);
     setCurrentBet(0);
@@ -211,25 +336,16 @@ const Blackjack = () => {
       return;
     }
 
-    setPlayerHand([]);
+    setPlayerHands([[]]);
+    setActiveHandIndex(0);
+    setHandBets([]);
+    setHandStatuses([]);
     setDealerHand([]);
     setCurrentBet(0);
     setStatus('Place your bet!');
     setGameState(GAME_STATES.BETTING);
     setShowDealerCard(false);
   }, [playerBank]);
-
-  // Auto-start new round when game is over (after a delay)
-  useEffect(() => {
-    if (gameState === GAME_STATES.GAME_OVER) {
-      const timer = setTimeout(() => {
-        if (playerBank > 0) {
-          // Don't auto-start, let player choose
-        }
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [gameState, playerBank]);
 
   return (
     <div className="min-h-screen p-4 flex flex-col items-center justify-center">
@@ -239,6 +355,7 @@ const Blackjack = () => {
         showAllCards={showDealerCard}
         label="Dealer"
         showValue={showDealerCard}
+        alwaysShowValue={true}
         value={dealerScore}
       />
 
@@ -251,27 +368,62 @@ const Blackjack = () => {
         {status}
       </div>
 
-      {/* Player's Hand */}
-      <Hand
-        cards={playerHand}
-        showAllCards={true}
-        label="Player"
-        showValue={playerHand.length > 0}
-        value={playerScore}
-      />
+      {/* Player's Hands (can be multiple if split) */}
+      <div className="flex flex-wrap gap-6 justify-center mb-4">
+        {playerHands.map((hand, idx) => {
+          if (hand.length === 0 && idx === 0) return null;
+
+          const isActive = idx === activeHandIndex && gameState === GAME_STATES.PLAYER_TURN && handStatuses[idx] === 'playing';
+          const handScore = calculateHandValue(hand);
+          const handStatus = handStatuses[idx];
+
+          let borderColor = 'border-gray-500';
+          if (isActive) borderColor = 'border-yellow-400';
+          else if (handStatus === 'won') borderColor = 'border-green-500';
+          else if (handStatus === 'lost' || handStatus === 'busted') borderColor = 'border-red-500';
+          else if (handStatus === 'push') borderColor = 'border-blue-500';
+
+          return (
+            <div key={idx} className={`border-4 ${borderColor} rounded-lg p-4 ${isActive ? 'shadow-2xl' : ''}`}>
+              <Hand
+                cards={hand}
+                showAllCards={true}
+                label={playerHands.length > 1 ? `Hand ${idx + 1}` : 'Player'}
+                showValue={hand.length > 0}
+                value={handScore}
+              />
+              {handBets[idx] && (
+                <div className="text-yellow-400 text-sm mt-2">
+                  Bet: ${handBets[idx]}
+                </div>
+              )}
+              {handStatus && handStatus !== 'playing' && (
+                <div className={`text-sm mt-1 font-bold ${handStatus === 'won' ? 'text-green-400' :
+                  handStatus === 'lost' || handStatus === 'busted' ? 'text-red-400' :
+                    'text-blue-400'
+                  }`}>
+                  {handStatus === 'busted' ? 'BUST' : handStatus.toUpperCase()}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
 
       {/* Game Controls */}
       <div className="my-6">
         <GameControls
           onDeal={initialDeal}
           onHit={hit}
-          onStand={() => stand()}
+          onStand={stand}
           onDoubleDown={doubleDown}
+          onSplit={split}
           onReset={resetGame}
           canDeal={gameState === GAME_STATES.DEALING}
-          canHit={gameState === GAME_STATES.PLAYER_TURN}
-          canStand={gameState === GAME_STATES.PLAYER_TURN}
-          canDouble={gameState === GAME_STATES.PLAYER_TURN && checkCanDoubleDown(playerHand) && playerBank >= currentBet}
+          canHit={gameState === GAME_STATES.PLAYER_TURN && handStatuses[activeHandIndex] === 'playing'}
+          canStand={gameState === GAME_STATES.PLAYER_TURN && handStatuses[activeHandIndex] === 'playing'}
+          canDouble={gameState === GAME_STATES.PLAYER_TURN && checkCanDoubleDown(currentHand) && playerBank >= (handBets[activeHandIndex] || 0) && handStatuses[activeHandIndex] === 'playing'}
+          canSplit={gameState === GAME_STATES.PLAYER_TURN && checkCanSplit(currentHand) && playerBank >= (handBets[activeHandIndex] || 0) && playerHands.length < 4 && handStatuses[activeHandIndex] === 'playing'}
           gameOver={gameState === GAME_STATES.GAME_OVER}
         />
       </div>
@@ -296,9 +448,9 @@ const Blackjack = () => {
         Bank: ${playerBank}
       </div>
 
-      {currentBet > 0 && (
+      {currentBet > 0 && gameState !== GAME_STATES.GAME_OVER && (
         <div className="text-yellow-400 text-xl mt-2">
-          Current Bet: ${currentBet}
+          Total Bet: ${handBets.reduce((sum, bet) => sum + bet, 0) || currentBet}
         </div>
       )}
 
@@ -312,9 +464,9 @@ const Blackjack = () => {
         </button>
       )}
 
-      {/* Debug Info (remove in production) */}
+      {/* Debug Info */}
       <div className="text-white text-xs mt-4 opacity-50">
-        Cards remaining: {cardsRemaining}
+        Cards remaining: {cardsRemaining} | Hands: {playerHands.length}
       </div>
     </div>
   );

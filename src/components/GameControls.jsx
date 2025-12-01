@@ -1,17 +1,19 @@
 import React from 'react';
 
 /**
- * Game control buttons (Hit, Stand, Double Down, etc.)
+ * Game control buttons (Hit, Stand, Double Down, Split, etc.)
  */
 const GameControls = ({
   onHit,
   onStand,
   onDoubleDown,
+  onSplit,
   onDeal,
   onReset,
   canHit = false,
   canStand = false,
   canDouble = false,
+  canSplit = false,
   canDeal = false,
   gameOver = false
 }) => {
@@ -54,6 +56,17 @@ const GameControls = ({
           disabled={!canDouble || gameOver}
         >
           Double Down
+        </button>
+      )}
+
+      {/* Split Button */}
+      {canSplit && (
+        <button
+          className={`${buttonClass} bg-pink-600 hover:bg-pink-700`}
+          onClick={onSplit}
+          disabled={!canSplit || gameOver}
+        >
+          Split
         </button>
       )}
 

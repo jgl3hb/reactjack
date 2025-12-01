@@ -48,21 +48,17 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: 
-    repeating-linear-gradient(
-      0deg,
+  background-image:
+    repeating-linear-gradient(0deg,
       transparent,
       transparent 2px,
       rgba(0, 0, 0, 0.03) 2px,
-      rgba(0, 0, 0, 0.03) 4px
-    ),
-    repeating-linear-gradient(
-      90deg,
+      rgba(0, 0, 0, 0.03) 4px),
+    repeating-linear-gradient(90deg,
       transparent,
       transparent 2px,
       rgba(0, 0, 0, 0.03) 2px,
-      rgba(0, 0, 0, 0.03) 4px
-    );
+      rgba(0, 0, 0, 0.03) 4px);
   pointer-events: none;
   opacity: 0.5;
 }
@@ -73,26 +69,30 @@ body {
 
 .card {
   margin: 5px;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, z-index 0.1s ease;
   box-shadow: var(--card-shadow);
   border-radius: 8px;
   animation: dealCard 0.4s ease-out;
+  cursor: pointer;
 }
 
 @keyframes dealCard {
   from {
     opacity: 0;
-    transform: translateY(-50px) rotateY(90deg);
+    transform: translateY(-50px) rotateY(90deg) scale(0.8);
   }
+
   to {
     opacity: 1;
-    transform: translateY(0) rotateY(0);
+    transform: translateY(0) rotateY(0) scale(1);
   }
 }
 
 .card:hover {
-  transform: translateY(-5px) scale(1.05);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+  transform: translateY(-10px) scale(1.15) !important;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5);
+  z-index: 999 !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card.outline {
@@ -168,6 +168,7 @@ h1 {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -253,19 +254,25 @@ button:disabled {
    =================================== */
 
 @keyframes chipClick {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1);
   }
+
   50% {
     transform: scale(0.95);
   }
 }
 
 @keyframes winPulse {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1);
     opacity: 1;
   }
+
   50% {
     transform: scale(1.05);
     opacity: 0.9;
