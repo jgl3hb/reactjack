@@ -1,110 +1,197 @@
+/* ===================================
+   BLACKJACK GAME STYLES
+   =================================== */
+
+/* CSS Custom Properties */
+:root {
+  --casino-green: #0d5e3a;
+  --casino-green-dark: #0a4a2e;
+  --felt-texture: linear-gradient(135deg, #0d5e3a 0%, #1a7a4a 50%, #0d5e3a 100%);
+  --gold: #ffd700;
+  --gold-dark: #cc9900;
+  --shadow-dark: rgba(0, 0, 0, 0.6);
+  --shadow-medium: rgba(0, 0, 0, 0.3);
+  --card-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* ===================================
+   GLOBAL & LAYOUT
+   =================================== */
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
 .App {
   text-align: center;
-  background-image: url(https://us.123rf.com/450wm/yamabikay/yamabikay1706/yamabikay170600015/79675835-green-felt-fabric-for-background-seamless-square-texture-tile-ready-high-resolution-photo-.jpg?ver=6);
+  background: var(--felt-texture);
   background-size: cover;
   background-repeat: no-repeat;
   background-position: center;
-  height: 100vh;
-  overflow: hidden;
-}
-
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
+  background-attachment: fixed;
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  position: relative;
 }
 
-.App-link {
-  color: #61dafb;
+/* Add subtle texture overlay */
+.App::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.03) 2px,
+      rgba(0, 0, 0, 0.03) 4px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.03) 2px,
+      rgba(0, 0, 0, 0.03) 4px
+    );
+  pointer-events: none;
+  opacity: 0.5;
 }
 
-@keyframes App-logo-spin {
+/* ===================================
+   CARD STYLES
+   =================================== */
+
+.card {
+  margin: 5px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: var(--card-shadow);
+  border-radius: 8px;
+  animation: dealCard 0.4s ease-out;
+}
+
+@keyframes dealCard {
   from {
-    transform: rotate(0deg);
+    opacity: 0;
+    transform: translateY(-50px) rotateY(90deg);
   }
   to {
-    transform: rotate(360deg);
+    opacity: 1;
+    transform: translateY(0) rotateY(0);
   }
 }
 
+.card:hover {
+  transform: translateY(-5px) scale(1.05);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+}
 
-body {
+.card.outline {
+  border: 0.15em dashed #202d7a;
+}
+
+.card.shadow {
+  box-shadow: 7px 7px 12px 0 var(--shadow-dark) !important;
+}
+
+/* ===================================
+   HAND DISPLAY
+   =================================== */
+
+#player-cards,
+#dealer-cards {
   display: flex;
-  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  justify-content: center;
-  background-image: url("https://us.123rf.com/450wm/yamabikay/yamabikay1706/yamabikay170600015/79675835-green-felt-fabric-for-background-seamless-square-texture-tile-ready-high-resolution-photo-.jpg?ver=6");
-  padding: 24px;
-  box-sizing: border-box;
-  height: 100vh;
-}
-
-h1 {
-  text-align: center;
-  font-weight: bold;
-  color: red;
-}
-
-#burnpile,
-#deck,
-#bet,
-#playerBank,
-#hitstand {
-  display: flex;
-  justify-content: center;
-  color: white;
-}
-
-#rules,
-#status {
-  display: grid;
-  justify-content: center;
-  color: white;
-}
-
-h1, h3, p {
-  margin-bottom: 0px;
-  margin-top: 0px;
-}
-
-div {
-  margin-bottom: 0px;
+  min-height: 140px;
+  padding: 20px;
+  flex-wrap: wrap;
 }
 
 #dealerhandvalue,
 #playerhandvalue {
   text-align: center;
   font-weight: bold;
-  font-size: 20px;
+  font-size: 24px;
   color: white;
+  text-shadow: 2px 2px 4px var(--shadow-dark);
+  background: rgba(0, 0, 0, 0.5);
+  padding: 8px 16px;
+  border-radius: 8px;
+  display: inline-block;
+  margin-top: 10px;
 }
 
-#pcard,
-#dcard {
-  display: inline-flex;
-  justify-content: flex-start;
+/* ===================================
+   TEXT & TYPOGRAPHY
+   =================================== */
+
+h1 {
+  text-align: center;
+  font-weight: bold;
+  color: var(--gold);
+  text-shadow: 3px 3px 6px var(--shadow-dark);
+  margin: 20px 0;
+  font-size: 3rem;
+  letter-spacing: 4px;
 }
 
-#player-cards,
-#dealer-cards {
+.text-shadow-lg {
+  text-shadow: 3px 3px 8px var(--shadow-dark), 0 0 20px rgba(255, 215, 0, 0.3);
+}
+
+#status {
+  display: grid;
+  justify-content: center;
+  color: white;
+  font-size: 1.2rem;
+  padding: 15px 30px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 12px;
+  margin: 20px auto;
+  max-width: 600px;
+  text-shadow: 2px 2px 4px var(--shadow-dark);
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===================================
+   BETTING & BANK
+   =================================== */
+
+#playerBank {
   display: flex;
   justify-content: center;
+  align-items: center;
+  color: white;
+  font-size: 2rem;
+  font-weight: bold;
+  background: linear-gradient(135deg, #1a5c3a 0%, #0d4a2e 100%);
+  border: 4px solid var(--gold);
+  border-radius: 12px;
+  padding: 16px 32px;
+  margin: 20px auto;
+  box-shadow: 0 4px 12px var(--shadow-dark), inset 0 2px 4px rgba(255, 255, 255, 0.1);
+  text-shadow: 2px 2px 4px var(--shadow-dark);
 }
 
 #bet {
@@ -114,22 +201,145 @@ div {
   color: white;
 }
 
-.card {
-  margin: 5px 5px 5px 5px;
+#betting-area {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin: 20px 0;
+  flex-wrap: wrap;
 }
 
-.card.outline {
-  border: 0.15em dashed #202d7a;
+/* ===================================
+   BUTTONS
+   =================================== */
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+  border: none;
+  outline: none;
 }
 
-.card.shadow {
-  box-shadow: 7px 7px 7px 0 rgba(41, 41, 41, 0.95) !important;
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .btn-md {
-  margin: 5px 5px 5px 5px;
-  color: goldenrod;
-  background-color: blue;
+  margin: 5px;
+  color: var(--gold);
+  background-color: #1a4d7a;
   font-weight: bold;
-  border: 2px solid goldenrod;
+  border: 2px solid var(--gold);
+  padding: 10px 20px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 8px var(--shadow-medium);
+}
+
+.btn-md:hover:not(:disabled) {
+  background-color: #2a5d8a;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px var(--shadow-dark);
+}
+
+.btn-md:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px var(--shadow-medium);
+}
+
+/* ===================================
+   ANIMATIONS & EFFECTS
+   =================================== */
+
+@keyframes chipClick {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.95);
+  }
+}
+
+@keyframes winPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+}
+
+/* Win/Loss animations */
+.win-animation {
+  animation: winPulse 0.6s ease-in-out 3;
+}
+
+/* ===================================
+   RESPONSIVE DESIGN
+   =================================== */
+
+@media (max-width: 768px) {
+  h1 {
+    font-size: 2rem;
+    letter-spacing: 2px;
+  }
+
+  #status {
+    font-size: 1rem;
+    padding: 12px 20px;
+  }
+
+  #playerBank {
+    font-size: 1.5rem;
+    padding: 12px 24px;
+  }
+
+  .card {
+    margin: 3px;
+  }
+
+  #betting-area {
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  h1 {
+    font-size: 1.5rem;
+  }
+
+  #playerBank {
+    font-size: 1.2rem;
+    padding: 10px 20px;
+  }
+
+  .card {
+    transform: scale(0.9);
+  }
+}
+
+/* ===================================
+   UTILITY CLASSES
+   =================================== */
+
+.hidden {
+  display: none !important;
+}
+
+.blur {
+  filter: blur(4px);
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+/* Center content */
+.center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }

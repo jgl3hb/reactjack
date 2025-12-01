@@ -1,250 +1,322 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import './App.css';
 import './cardstarter.css';
-
-
-
-const deckData = [
-  "dA", "dQ", "dK", "dJ", "d10", "d09", "d08", "d07", "d06", "d05", "d04", "d03", "d02",
-  "hA", "hQ", "hK", "hJ", "h10", "h09", "h08", "h07", "h06", "h05", "h04", "h03", "h02",
-  "cA", "cQ", "cK", "cJ", "c10", "c09", "c08", "c07", "c06", "c05", "c04", "c03", "c02",
-  "sA", "sQ", "sK", "sJ", "s10", "s09", "s08", "s07", "s06", "s05", "s04", "s03", "s02"
-];
+import { useDeck } from './hooks/useDeck';
+import {
+  calculateHandValue,
+  isBlackjack,
+  determineWinner,
+  shouldDealerHit,
+  canDoubleDown as checkCanDoubleDown
+} from './hooks/useBlackjackGame';
+import { STARTING_BANK, BET_DENOMINATIONS, GAME_STATES } from './utils/gameConstants';
+import ChipButton from './components/ChipButton';
+import GameControls from './components/GameControls';
+import Hand from './components/Hand';
 
 const Blackjack = () => {
+  // Game state
   const [playerHand, setPlayerHand] = useState([]);
   const [dealerHand, setDealerHand] = useState([]);
-  const [playerBank, setPlayerBank] = useState(500);
+  const [playerBank, setPlayerBank] = useState(STARTING_BANK);
   const [currentBet, setCurrentBet] = useState(0);
-  const [deck, setDeck] = useState(deckData);
-  const [status, setStatus] = useState('Player, make a bet');
-  const [playerScore, setPlayerScore] = useState(0);
-  const [dealerScore, setDealerScore] = useState(0);
-  const [gameOver, setGameOver] = useState(false);
+  const [status, setStatus] = useState('Place your bet to begin!');
+  const [gameState, setGameState] = useState(GAME_STATES.BETTING);
+  const [showDealerCard, setShowDealerCard] = useState(false);
 
-  const cardLookup = (card) => {
-    const cardValueStr = card.slice(1);
-    let value;
-    if (cardValueStr === 'A') {
-      value = 11;
-    } else if (['K', 'Q', 'J'].includes(cardValueStr)) {
-      value = 10;
-    } else {
-      value = parseInt(cardValueStr, 10);
+  // Deck management
+  const { drawCard, resetDeck, cardsRemaining } = useDeck();
+
+  // Calculate hand values
+  const playerScore = calculateHandValue(playerHand);
+  const dealerScore = calculateHandValue(dealerHand);
+
+  /**
+   * Handle placing a bet
+   */
+  const handleBet = useCallback((betAmount) => {
+    if (gameState !== GAME_STATES.BETTING) {
+      setStatus('Finish current game before placing new bet');
+      return;
     }
-    return value;
-  };
 
-  const computeHandTotal = (hand) => {
-    const total = handleAces(hand, hand.reduce((total, card) => total + cardLookup(card), 0));
-    console.log('computeHandTotal:', hand, total);
-    return total;
-  };
-
-  const handleAces = (hand, total) => {
-    let aces = hand.filter(card => card[1] === 'A');
-    aces.forEach(() => { if (total > 21) total -= 10; });
-    return total;
-  };
-
-  useEffect(() => {
-    setPlayerScore(computeHandTotal(playerHand));
-    setDealerScore(computeHandTotal(dealerHand));
-  }, [playerHand, dealerHand]);
-
-  const renderCard = (hand, deckId) => {
-    return hand.map((card, i) => (
-      <div
-        key={i}
-        className={`card large ${deckId === 'dealer-cards' && i === 1 && !gameOver ? 'back-red' : card}`}
-      ></div>
-    ));
-  };
-
-  const handleBet = (betAmount) => {
     if (playerBank >= betAmount) {
       setPlayerHand([]);
       setDealerHand([]);
-      setPlayerScore(0);
-      setDealerScore(0);
-      setGameOver(false);
-      setStatus(`Player Bet is $${betAmount}, Press Deal`);
+      setShowDealerCard(false);
+      setStatus(`Bet placed: $${betAmount}. Click Deal to start!`);
       setCurrentBet(betAmount);
-      setPlayerBank(playerBank - betAmount);
+      setPlayerBank(prev => prev - betAmount);
+      setGameState(GAME_STATES.DEALING);
     } else {
-      setStatus(`You don't have enough money. Game over.`);
+      setStatus(`Insufficient funds! You have $${playerBank}`);
     }
-  };
+  }, [gameState, playerBank]);
 
-  const selectCard = () => {
-    const newDeck = [...deck];
-    const selectedCard = newDeck.splice(Math.floor(Math.random() * newDeck.length), 1)[0];
-    setDeck(newDeck);
-    return selectedCard;
-  };
+  /**
+   * Deal initial cards (2 to player, 2 to dealer)
+   * FIXED: Proper blackjack detection and payout
+   */
+  const initialDeal = useCallback(() => {
+    if (gameState !== GAME_STATES.DEALING) {
+      return;
+    }
 
-  const dealCard = (hand, callback) => {
-    const newHand = [...hand, selectCard()];
-    callback(newHand);
-  };
+    // Deal 2 cards to each
+    const newPlayerHand = [drawCard(), drawCard()];
+    const newDealerHand = [drawCard(), drawCard()];
 
-// ...
+    setPlayerHand(newPlayerHand);
+    setDealerHand(newDealerHand);
 
-  const checkForBlackjack = (hand) => {
-    // Check if the hand is a blackjack which is an Ace with a '10', 'J', 'Q', or 'K'
-    return hand.includes('A') && (hand.includes('10') || hand.includes('J') || hand.includes('Q') || hand.includes('K'));
-  };
+    // Check for blackjacks
+    const playerBJ = isBlackjack(newPlayerHand);
+    const dealerBJ = isBlackjack(newDealerHand);
 
-  const initialDeal = () => {
-    if (!gameOver && playerHand.length === 0 && dealerHand.length === 0) { 
-      let tempPlayerHand = [];
-      let tempDealerHand = [];
-      for (let i = 0; i < 2; i++) { // Deal initial two cards each for player and dealer
-        tempPlayerHand.push(selectCard());
-        tempDealerHand.push(selectCard());
-      }
-      setPlayerHand(tempPlayerHand);
-      setDealerHand(tempDealerHand);
-  
-      // Checking for blackjack should be done after the deal
-      const playerBlackjack = checkForBlackjack(tempPlayerHand);
-      const dealerBlackjack = checkForBlackjack(tempDealerHand);
-  
-      // Update state based on blackjack check
-      if (playerBlackjack || dealerBlackjack) {
-        setGameOver(true); // End the game if blackjack is dealt
-        setStatus(playerBlackjack ? "Player has Blackjack!" : "Dealer has Blackjack!");
-        if (playerBlackjack) {
-          setPlayerBank(playerBank + currentBet * 1.5); // Payout for blackjack
-        }
-        if (dealerBlackjack) {
-          // Dealer blackjack logic, if different from player's
-        }
-        if (playerBlackjack && dealerBlackjack) {
-          setStatus("Both Player and Dealer have Blackjack! It's a tie.");
-        }
-      } else {
-        setStatus('Hit or Stand?');
-      }
+    if (playerBJ || dealerBJ) {
+      // Show dealer's cards
+      setShowDealerCard(true);
+
+      const result = determineWinner(
+        calculateHandValue(newPlayerHand),
+        calculateHandValue(newDealerHand),
+        newPlayerHand,
+        newDealerHand,
+        currentBet
+      );
+
+      setStatus(result.message);
+      setPlayerBank(prev => prev + result.payout);
+      setGameState(GAME_STATES.GAME_OVER);
     } else {
-      console.log('Deal button clicked, but game is over or hands not empty.');
+      setStatus('Hit or Stand?');
+      setGameState(GAME_STATES.PLAYER_TURN);
     }
-  };
-  
-  
-  
-  
-  
+  }, [gameState, drawCard, currentBet]);
 
+  /**
+   * Player hits (draws a card)
+   * FIXED: Proper state management and bust detection
+   */
+  const hit = useCallback(() => {
+    if (gameState !== GAME_STATES.PLAYER_TURN) return;
 
-  const hit = () => {
-    if (!gameOver && playerHand.length > 0) { 
-      dealCard(playerHand, (newHand) => {
-        setPlayerHand(newHand);
-        const newScore = computeHandTotal(newHand);
-        setPlayerScore(newScore);
-        if (newScore > 21) {
-          setGameOver(true);
-          setStatus("Player Busts, Dealer Wins");
-        }
-      });
+    const newHand = [...playerHand, drawCard()];
+    setPlayerHand(newHand);
+
+    const newScore = calculateHandValue(newHand);
+
+    if (newScore > 21) {
+      // Player busted
+      setShowDealerCard(true);
+      setStatus("Player Busts! Dealer wins.");
+      setGameState(GAME_STATES.GAME_OVER);
+    } else if (newScore === 21) {
+      // Auto-stand on 21
+      stand(newHand);
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameState, playerHand, drawCard]);
 
-  const stand = () => {
-    if (!gameOver && playerHand.length > 0) {
-      let newDealerHand = [...dealerHand];
-      while (computeHandTotal(newDealerHand) <= 17) {
-        newDealerHand.push(selectCard());
-      }
-      setDealerHand(newDealerHand);
-      const newDealerScore = computeHandTotal(newDealerHand);
-      setDealerScore(newDealerScore);
-      renderWin(playerScore, newDealerScore);
+  /**
+   * Player stands (dealer's turn)
+   * FIXED: Dealer now correctly stands on 17, not hits
+   */
+  const stand = useCallback((handToUse = null) => {
+    const currentPlayerHand = handToUse || playerHand;
+
+    if (gameState !== GAME_STATES.PLAYER_TURN) return;
+
+    setGameState(GAME_STATES.DEALER_TURN);
+    setShowDealerCard(true);
+
+    // Dealer draws cards
+    let newDealerHand = [...dealerHand];
+    let dealerValue = calculateHandValue(newDealerHand);
+
+    // FIXED: Dealer hits on < 17, stands on >= 17
+    while (shouldDealerHit(dealerValue)) {
+      newDealerHand.push(drawCard());
+      dealerValue = calculateHandValue(newDealerHand);
     }
-  };
 
-  const renderBlackjack = () => {
-    setPlayerScore(computeHandTotal(playerHand));
-    setDealerScore(computeHandTotal(dealerHand));
-  };
+    setDealerHand(newDealerHand);
 
-  const renderWin = (playerScore, dealerScore) => {
-    if (playerScore > 21) {
-      setGameOver(true);
-      setCurrentBet(0);
-      setStatus("Player Busts, Dealer Wins");
-    } else if (dealerScore > 21) {
-      setGameOver(true);
-      setPlayerBank(playerBank + currentBet * 2);
-      setCurrentBet(0);
-      setStatus("Dealer Busts, Player Wins!");
-    } else if (playerScore > dealerScore && playerScore <= 21) {
-      setGameOver(true);
-      setPlayerBank(playerBank + currentBet * 2);
-      setCurrentBet(0);
-      setStatus("Player Wins!");
-    } else if (dealerScore <= 21) {
-      setGameOver(true);
-      setCurrentBet(0);
-      setStatus("Dealer Wins");
+    // Determine winner
+    const result = determineWinner(
+      calculateHandValue(currentPlayerHand),
+      dealerValue,
+      currentPlayerHand,
+      newDealerHand,
+      currentBet
+    );
+
+    setStatus(result.message);
+    setPlayerBank(prev => prev + result.payout);
+    setGameState(GAME_STATES.GAME_OVER);
+  }, [gameState, playerHand, dealerHand, drawCard, currentBet]);
+
+  /**
+   * Double down - double bet, take one card, then stand
+   */
+  const doubleDown = useCallback(() => {
+    if (gameState !== GAME_STATES.PLAYER_TURN) return;
+    if (!checkCanDoubleDown(playerHand)) return;
+    if (playerBank < currentBet) {
+      setStatus('Insufficient funds to double down!');
+      return;
     }
-  };
 
-  const resetGame = () => {
+    // Double the bet
+    setPlayerBank(prev => prev - currentBet);
+    setCurrentBet(prev => prev * 2);
+
+    // Take exactly one card
+    const newHand = [...playerHand, drawCard()];
+    setPlayerHand(newHand);
+
+    const newScore = calculateHandValue(newHand);
+
+    if (newScore > 21) {
+      // Busted
+      setShowDealerCard(true);
+      setStatus("Player Busts! Dealer wins.");
+      setGameState(GAME_STATES.GAME_OVER);
+    } else {
+      // Auto-stand after double down
+      setTimeout(() => stand(newHand), 500);
+    }
+  }, [gameState, playerHand, playerBank, currentBet, drawCard, stand]);
+
+  /**
+   * Reset game to initial state
+   */
+  const resetGame = useCallback(() => {
     setPlayerHand([]);
     setDealerHand([]);
-    setPlayerBank(500);
+    setPlayerBank(STARTING_BANK);
     setCurrentBet(0);
-    setDeck(deckData);
     setStatus('Game reset. Place your bet!');
-    setGameOver(false);
-  };
+    setGameState(GAME_STATES.BETTING);
+    setShowDealerCard(false);
+    resetDeck();
+  }, [resetDeck]);
 
+  /**
+   * Start new round without resetting bank
+   */
+  const newRound = useCallback(() => {
+    if (playerBank <= 0) {
+      setStatus('Game Over! You ran out of money. Click Reset.');
+      return;
+    }
+
+    setPlayerHand([]);
+    setDealerHand([]);
+    setCurrentBet(0);
+    setStatus('Place your bet!');
+    setGameState(GAME_STATES.BETTING);
+    setShowDealerCard(false);
+  }, [playerBank]);
+
+  // Auto-start new round when game is over (after a delay)
   useEffect(() => {
-    renderBlackjack();
-  }, [playerHand, dealerHand]);
+    if (gameState === GAME_STATES.GAME_OVER) {
+      const timer = setTimeout(() => {
+        if (playerBank > 0) {
+          // Don't auto-start, let player choose
+        }
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [gameState, playerBank]);
 
   return (
     <div className="min-h-screen p-4 flex flex-col items-center justify-center">
-      <div className="flex justify-center pt-4" id="dealer-cards">{renderCard(dealerHand, 'dealer-cards')}</div>
-      <div className="text-white text-4xl mb-4" id="playerBank">Blackjack</div>
-      <div className="text-white text-4xl mb-4" id="playerBank">Pays 3 to 2</div>
-      <div className="text-white text-xl" id="status">{status}</div>
-      <div className="flex justify-center" id="player-cards">{renderCard(playerHand, 'player-cards')}</div>
-      <div className="text-white text-4xl" id="playerhandvalue">{playerScore}</div>
-      <div className="flex space-x-4 mb-4">
-        <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-          onClick={() => {
-            if (!gameOver) {
-              initialDeal();
-            }
-          }}>Deal</button>
-        <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={hit}>Hit</button>
-        <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={stand}>Stand</button>
-        <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={resetGame}>Reset</button>
-      </div>
-      <div className="flex space-x-4 mb-4" id="betting-area">
-        <button className="relative bg-red-500 text-black font-bold py-2 rounded-full w-12 h-12" onClick={() => handleBet(1)}>
-          <span className="relative z-10">$1</span>
-          <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-full" style={{ width: '70%', height: '70%' }}></span>
-        </button>
-        <button className="relative bg-blue-500 text-black font-bold py-2 rounded-full w-12 h-12" onClick={() => handleBet(5)}>
-          <span className="relative z-10">$5</span>
-          <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-full w-8 h-8"></span>
-        </button>
-        <button className="relative bg-green-500 text-black font-bold py-2 rounded-full w-12 h-12" onClick={() => handleBet(25)}>
-          <span className="relative z-10">$25</span>
-          <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-full w-8 h-8"></span>
-        </button>
-        <button className="relative bg-yellow-500 text-black text-xs font-bold py-2 rounded-full w-12 h-12" onClick={() => handleBet(100)}>
-          <span className="relative z-10">$100</span>
-          <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-full w-8 h-8"></span>
-        </button>
-      </div>
-      <div className="text-white text-4xl mb-4" id="playerBank">${playerBank}</div>
+      {/* Dealer's Hand */}
+      <Hand
+        cards={dealerHand}
+        showAllCards={showDealerCard}
+        label="Dealer"
+        showValue={showDealerCard}
+        value={dealerScore}
+      />
 
+      {/* Game Title */}
+      <div className="text-white text-5xl font-bold mb-2 mt-8 text-shadow-lg">BLACKJACK</div>
+      <div className="text-yellow-400 text-2xl mb-4">Pays 3 to 2</div>
+
+      {/* Status */}
+      <div className="text-white text-xl mb-6 bg-black bg-opacity-50 px-6 py-3 rounded-lg min-w-[300px] text-center">
+        {status}
       </div>
+
+      {/* Player's Hand */}
+      <Hand
+        cards={playerHand}
+        showAllCards={true}
+        label="Player"
+        showValue={playerHand.length > 0}
+        value={playerScore}
+      />
+
+      {/* Game Controls */}
+      <div className="my-6">
+        <GameControls
+          onDeal={initialDeal}
+          onHit={hit}
+          onStand={() => stand()}
+          onDoubleDown={doubleDown}
+          onReset={resetGame}
+          canDeal={gameState === GAME_STATES.DEALING}
+          canHit={gameState === GAME_STATES.PLAYER_TURN}
+          canStand={gameState === GAME_STATES.PLAYER_TURN}
+          canDouble={gameState === GAME_STATES.PLAYER_TURN && checkCanDoubleDown(playerHand) && playerBank >= currentBet}
+          gameOver={gameState === GAME_STATES.GAME_OVER}
+        />
+      </div>
+
+      {/* Betting Area */}
+      <div className="mb-4">
+        <div className="text-white text-lg mb-3 text-center">Place Your Bet</div>
+        <div className="flex gap-3 flex-wrap justify-center">
+          {BET_DENOMINATIONS.map(amount => (
+            <ChipButton
+              key={amount}
+              value={amount}
+              onClick={() => handleBet(amount)}
+              disabled={gameState !== GAME_STATES.BETTING || playerBank < amount}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Player Bank & Info */}
+      <div className="text-white text-3xl font-bold bg-green-800 bg-opacity-70 px-8 py-4 rounded-lg border-4 border-yellow-500">
+        Bank: ${playerBank}
+      </div>
+
+      {currentBet > 0 && (
+        <div className="text-yellow-400 text-xl mt-2">
+          Current Bet: ${currentBet}
+        </div>
+      )}
+
+      {/* New Round Button */}
+      {gameState === GAME_STATES.GAME_OVER && playerBank > 0 && (
+        <button
+          onClick={newRound}
+          className="mt-4 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105"
+        >
+          New Round
+        </button>
+      )}
+
+      {/* Debug Info (remove in production) */}
+      <div className="text-white text-xs mt-4 opacity-50">
+        Cards remaining: {cardsRemaining}
+      </div>
+    </div>
   );
 };
 
