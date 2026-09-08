@@ -17,10 +17,10 @@ const GameControls = ({
   canDeal = false,
   gameOver = false
 }) => {
-  const buttonClass = "px-6 py-3 rounded-lg font-bold text-white transition-all duration-200 transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg";
+  const buttonClass = "px-4 py-3 sm:px-8 sm:py-4 text-base sm:text-xl rounded-xl font-bold text-white transition-all duration-200 transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-xl w-full sm:w-auto";
 
   return (
-    <div className="flex flex-wrap gap-3 justify-center">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:flex lg:flex-wrap gap-3 sm:gap-4 justify-center w-full px-4">
       {/* Deal Button */}
       <button
         className={`${buttonClass} bg-green-600 hover:bg-green-700`}

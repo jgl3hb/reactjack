@@ -6,6 +6,7 @@ import { CARD_VALUES, PAYOUTS, DEALER_RULES } from '../utils/gameConstants';
  * @returns {number} The card's value
  */
 export const getCardValue = (card) => {
+  if (!card || typeof card !== 'string') return 0;
   const cardRank = card.slice(1); // Remove suit (first character)
   return CARD_VALUES[cardRank] || 0;
 };
@@ -16,6 +17,7 @@ export const getCardValue = (card) => {
  * @returns {string} The card's rank
  */
 export const getCardRank = (card) => {
+  if (!card || typeof card !== 'string') return '';
   return card.slice(1);
 };
 
@@ -47,6 +49,30 @@ export const calculateHandValue = (hand) => {
   }
 
   return total;
+};
+
+/**
+ * Returns true when hand is "soft" (contains at least one ace counted as 11)
+ * @param {Array<string>} hand
+ * @returns {boolean}
+ */
+export const isSoftHand = (hand) => {
+  if (!hand || hand.length === 0) return false;
+
+  let total = 0;
+  let aces = 0;
+
+  hand.forEach(card => {
+    total += getCardValue(card);
+    if (getCardRank(card) === 'A') aces++;
+  });
+
+  while (total > 21 && aces > 0) {
+    total -= 10;
+    aces--;
+  }
+
+  return aces > 0;
 };
 
 /**
@@ -94,8 +120,13 @@ export const canDoubleDown = (hand) => {
  * @param {number} dealerTotal - Dealer's hand value
  * @returns {boolean} True if dealer should hit
  */
-export const shouldDealerHit = (dealerTotal) => {
-  return dealerTotal < DEALER_RULES.STAND_VALUE;
+export const shouldDealerHit = (dealerTotal, dealerHand = [], rules = {}) => {
+  const dealerHitsSoft17 = rules.dealerHitsSoft17 ?? false;
+  if (dealerTotal < DEALER_RULES.STAND_VALUE) return true;
+  if (dealerHitsSoft17 && dealerTotal === DEALER_RULES.STAND_VALUE && isSoftHand(dealerHand)) {
+    return true;
+  }
+  return false;
 };
 
 /**
@@ -107,9 +138,17 @@ export const shouldDealerHit = (dealerTotal) => {
  * @param {number} bet - Current bet amount
  * @returns {Object} Result with status, message, and payout
  */
-export const determineWinner = (playerTotal, dealerTotal, playerHand, dealerHand, bet) => {
-  const playerBlackjack = isBlackjack(playerHand);
-  const dealerBlackjack = isBlackjack(dealerHand);
+export const determineWinner = (
+  playerTotal,
+  dealerTotal,
+  playerHand,
+  dealerHand,
+  bet,
+  options = {}
+) => {
+  const playerBlackjack = options.playerNaturalBlackjack ?? isBlackjack(playerHand);
+  const dealerBlackjack = options.dealerNaturalBlackjack ?? isBlackjack(dealerHand);
+  const blackjackPayoutMultiplier = options.blackjackPayoutMultiplier ?? (PAYOUTS.BLACKJACK - 1);
 
   // Both have blackjack - push
   if (playerBlackjack && dealerBlackjack) {
@@ -125,7 +164,7 @@ export const determineWinner = (playerTotal, dealerTotal, playerHand, dealerHand
     return {
       status: 'win',
       message: "Blackjack! You win 3:2!",
-      payout: bet * PAYOUTS.BLACKJACK
+      payout: bet * (1 + blackjackPayoutMultiplier)
     };
   }
 

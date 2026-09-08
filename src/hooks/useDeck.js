@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { SINGLE_DECK, DECK_CONFIG } from '../utils/gameConstants';
 
 /**
@@ -29,26 +29,24 @@ const createShuffledDeck = (numDecks) => {
  */
 export const useDeck = (numDecks = DECK_CONFIG.NUM_DECKS) => {
   const [deck, setDeck] = useState(() => createShuffledDeck(numDecks));
+  const deckRef = useRef(deck);
 
   /**
    * Draws a card from the deck, reshuffles if needed
    * FIXED: Uses setState callback to capture drawn card properly
    */
   const drawCard = useCallback(() => {
-    let drawnCard = null;
+    let currentDeck = deckRef.current;
 
-    setDeck(currentDeck => {
-      let deckToDrawFrom = [...currentDeck];
-      // Check if we need to reshuffle BEFORE drawing
-      if (deckToDrawFrom.length <= DECK_CONFIG.RESHUFFLE_THRESHOLD) {
-        console.log('Reshuffling deck...');
-        deckToDrawFrom = createShuffledDeck(numDecks);
-      }
+    if (currentDeck.length <= DECK_CONFIG.RESHUFFLE_THRESHOLD) {
+      currentDeck = createShuffledDeck(numDecks);
+    }
 
-      // Draw from the determined deck
-      drawnCard = deckToDrawFrom[0];
-      return deckToDrawFrom.slice(1); // Update state with the sliced deck
-    });
+    const drawnCard = currentDeck[0] || null;
+    const nextDeck = currentDeck.slice(1);
+
+    deckRef.current = nextDeck;
+    setDeck(nextDeck);
 
     return drawnCard;
   }, [numDecks]);
@@ -57,7 +55,9 @@ export const useDeck = (numDecks = DECK_CONFIG.NUM_DECKS) => {
    * Resets the deck to a fresh shuffled state
    */
   const resetDeck = useCallback(() => {
-    setDeck(createShuffledDeck(numDecks));
+    const freshDeck = createShuffledDeck(numDecks);
+    deckRef.current = freshDeck;
+    setDeck(freshDeck);
   }, [numDecks]);
 
   return {

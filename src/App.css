@@ -1,22 +1,21 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
 /* ===================================
    BLACKJACK GAME STYLES
    =================================== */
 
-/* CSS Custom Properties */
 :root {
   --casino-green: #0d5e3a;
   --casino-green-dark: #0a4a2e;
-  --felt-texture: linear-gradient(135deg, #0d5e3a 0%, #1a7a4a 50%, #0d5e3a 100%);
+  --felt-texture:
+    linear-gradient(135deg, rgba(8, 46, 30, 0.82) 0%, rgba(14, 79, 49, 0.72) 50%, rgba(8, 46, 30, 0.86) 100%),
+    url('https://images.unsplash.com/photo-1675503855766-cdf53a0ee24b?q=80&w=1074&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
   --gold: #ffd700;
-  --gold-dark: #cc9900;
   --shadow-dark: rgba(0, 0, 0, 0.6);
   --shadow-medium: rgba(0, 0, 0, 0.3);
-  --card-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
-
-/* ===================================
-   GLOBAL & LAYOUT
-   =================================== */
 
 body {
   margin: 0;
@@ -26,17 +25,15 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
+  background-color: #0d5e3a;
 }
 
 .App {
-  text-align: center;
   background: var(--felt-texture);
   background-size: cover;
   background-repeat: no-repeat;
   background-position: center;
   background-attachment: fixed;
-  min-height: 100vh;
   position: relative;
 }
 
@@ -61,6 +58,13 @@ body {
       rgba(0, 0, 0, 0.03) 4px);
   pointer-events: none;
   opacity: 0.5;
+  z-index: 0;
+}
+
+/* Ensure children sit above the absolute background overlay */
+.App>* {
+  position: relative;
+  z-index: 10;
 }
 
 /* ===================================
@@ -68,12 +72,10 @@ body {
    =================================== */
 
 .card {
-  margin: 5px;
-  transition: transform 0.3s ease, box-shadow 0.3s ease, z-index 0.1s ease;
-  box-shadow: var(--card-shadow);
-  border-radius: 8px;
   animation: dealCard 0.4s ease-out;
   cursor: pointer;
+  /* Reset box shadow injected by legacy stylesheet */
+  box-shadow: none;
 }
 
 @keyframes dealCard {
@@ -88,80 +90,17 @@ body {
   }
 }
 
-.card:hover {
-  transform: translateY(-10px) scale(1.15) !important;
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5);
-  z-index: 999 !important;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.card.outline {
-  border: 0.15em dashed #202d7a;
-}
-
-.card.shadow {
-  box-shadow: 7px 7px 12px 0 var(--shadow-dark) !important;
-}
-
-/* ===================================
-   HAND DISPLAY
-   =================================== */
-
-#player-cards,
-#dealer-cards {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 140px;
-  padding: 20px;
-  flex-wrap: wrap;
-}
-
-#dealerhandvalue,
-#playerhandvalue {
-  text-align: center;
-  font-weight: bold;
-  font-size: 24px;
-  color: white;
-  text-shadow: 2px 2px 4px var(--shadow-dark);
-  background: rgba(0, 0, 0, 0.5);
-  padding: 8px 16px;
-  border-radius: 8px;
-  display: inline-block;
-  margin-top: 10px;
-}
-
 /* ===================================
    TEXT & TYPOGRAPHY
    =================================== */
-
-h1 {
-  text-align: center;
-  font-weight: bold;
-  color: var(--gold);
-  text-shadow: 3px 3px 6px var(--shadow-dark);
-  margin: 20px 0;
-  font-size: 3rem;
-  letter-spacing: 4px;
-}
 
 .text-shadow-lg {
   text-shadow: 3px 3px 8px var(--shadow-dark), 0 0 20px rgba(255, 215, 0, 0.3);
 }
 
-#status {
-  display: grid;
-  justify-content: center;
-  color: white;
-  font-size: 1.2rem;
-  padding: 15px 30px;
-  background: rgba(0, 0, 0, 0.6);
-  border-radius: 12px;
-  margin: 20px auto;
-  max-width: 600px;
-  text-shadow: 2px 2px 4px var(--shadow-dark);
-  animation: fadeIn 0.5s ease-in;
-}
+/* ===================================
+   UTILITY CLASSES & ANIMATIONS
+   =================================== */
 
 @keyframes fadeIn {
   from {
@@ -175,178 +114,27 @@ h1 {
   }
 }
 
-/* ===================================
-   BETTING & BANK
-   =================================== */
-
-#playerBank {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  color: white;
-  font-size: 2rem;
-  font-weight: bold;
-  background: linear-gradient(135deg, #1a5c3a 0%, #0d4a2e 100%);
-  border: 4px solid var(--gold);
-  border-radius: 12px;
-  padding: 16px 32px;
-  margin: 20px auto;
-  box-shadow: 0 4px 12px var(--shadow-dark), inset 0 2px 4px rgba(255, 255, 255, 0.1);
-  text-shadow: 2px 2px 4px var(--shadow-dark);
-}
-
-#bet {
-  font-weight: bold;
-  font-size: 20px;
-  text-align: center;
-  color: white;
-}
-
-#betting-area {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-  margin: 20px 0;
-  flex-wrap: wrap;
-}
-
-/* ===================================
-   BUTTONS
-   =================================== */
-
-button {
-  cursor: pointer;
-  font-family: inherit;
-  border: none;
-  outline: none;
-}
-
-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-.btn-md {
-  margin: 5px;
-  color: var(--gold);
-  background-color: #1a4d7a;
-  font-weight: bold;
-  border: 2px solid var(--gold);
-  padding: 10px 20px;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 8px var(--shadow-medium);
-}
-
-.btn-md:hover:not(:disabled) {
-  background-color: #2a5d8a;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px var(--shadow-dark);
-}
-
-.btn-md:active:not(:disabled) {
-  transform: translateY(0);
-  box-shadow: 0 2px 4px var(--shadow-medium);
-}
-
-/* ===================================
-   ANIMATIONS & EFFECTS
-   =================================== */
-
-@keyframes chipClick {
-
-  0%,
-  100% {
-    transform: scale(1);
-  }
-
-  50% {
-    transform: scale(0.95);
-  }
-}
-
-@keyframes winPulse {
-
-  0%,
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-
-  50% {
-    transform: scale(1.05);
-    opacity: 0.9;
-  }
-}
-
-/* Win/Loss animations */
-.win-animation {
-  animation: winPulse 0.6s ease-in-out 3;
-}
-
-/* ===================================
-   RESPONSIVE DESIGN
-   =================================== */
-
-@media (max-width: 768px) {
-  h1 {
-    font-size: 2rem;
-    letter-spacing: 2px;
-  }
-
-  #status {
-    font-size: 1rem;
-    padding: 12px 20px;
-  }
-
-  #playerBank {
-    font-size: 1.5rem;
-    padding: 12px 24px;
-  }
-
-  .card {
-    margin: 3px;
-  }
-
-  #betting-area {
-    gap: 8px;
-  }
-}
-
-@media (max-width: 480px) {
-  h1 {
-    font-size: 1.5rem;
-  }
-
-  #playerBank {
-    font-size: 1.2rem;
-    padding: 10px 20px;
-  }
-
-  .card {
-    transform: scale(0.9);
-  }
-}
-
-/* ===================================
-   UTILITY CLASSES
-   =================================== */
-
-.hidden {
-  display: none !important;
-}
-
-.blur {
-  filter: blur(4px);
-}
-
 .fade-in {
   animation: fadeIn 0.5s ease-in;
 }
 
-/* Center content */
-.center {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+@keyframes speechPop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 8px) scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+.animate-speech-pop {
+  animation: speechPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* Casino Felt Curved Inscription */
+.casino-felt-border {
+  border: 2px dashed rgba(255, 215, 0, 0.25);
+  border-radius: 9999px;
 }

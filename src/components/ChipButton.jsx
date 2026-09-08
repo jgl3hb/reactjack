@@ -26,11 +26,11 @@ const ChipButton = ({ value, onClick, disabled = false }) => {
 
   return (
     <button
-      className={`relative ${colors.bg} ${!disabled && colors.hover} text-white font-bold rounded-full w-16 h-16 transition-all duration-200 transform ${!disabled && 'hover:scale-110 active:scale-95'} ${disabled && 'opacity-50 cursor-not-allowed'} shadow-lg`}
+      className={`relative ${colors.bg} ${!disabled && colors.hover} text-white font-bold rounded-full w-20 h-20 md:w-24 md:h-24 transition-all duration-200 transform ${!disabled && 'hover:scale-110 active:scale-95'} ${disabled && 'opacity-50 cursor-not-allowed'} shadow-xl cursor-pointer`}
       onClick={onClick}
       disabled={disabled}
     >
-      <span className="relative z-10 text-sm font-bold">${value}</span>
+      <span className="relative z-10 text-lg md:text-xl font-bold">${value}</span>
       {/* Inner white circle for chip design */}
       <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-full border-2 border-current opacity-30" style={{ width: '70%', height: '70%' }}></span>
     </button>
