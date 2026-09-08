@@ -1059,9 +1059,9 @@ const Blackjack = () => {
           cards={dealerHand}
           showAllCards={showDealerCard}
           label="Dealer"
-          showValue={showDealerCard}
-          alwaysShowValue={true}
-          value={dealerScore}
+          showValue={dealerHand.length > 0}
+          alwaysShowValue={dealerHand.length > 0}
+          value={showDealerCard ? dealerScore : (dealerUpCard ? calculateHandValue([dealerUpCard]) : 0)}
           showCountTags={showCardTags}
         />
       </div>
@@ -1091,7 +1091,7 @@ const Blackjack = () => {
       </div>
 
       {/* Seats Grid */}
-      <div className="w-full max-w-7xl px-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 justify-items-center items-end mb-4 min-h-[280px]">
+      <div className="w-full max-w-7xl px-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 justify-items-center items-end mt-8 mb-4 min-h-[280px]">
         {seatPanels.map(({ id, label }) => {
           const isCpuSeat = id !== HUMAN_SEAT;
           const char = getCharacter(id);
@@ -1156,6 +1156,7 @@ const Blackjack = () => {
                         value={calculateHandValue(hand)}
                         label={hands.length > 1 ? `Hand ${handIdx + 1}` : ''}
                         showCountTags={showCardTags}
+                        compact={true}
                       />
                       <div className="flex justify-between items-center mt-2 border-t border-white/10 pt-1.5 text-xs">
                         <span className="text-yellow-300 font-semibold">Bet: ${bets[handIdx] || 0}</span>
