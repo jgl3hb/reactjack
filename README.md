@@ -1,70 +1,100 @@
-# Getting Started with Create React App
+# Reactjack - Blackjack & Card Counting Simulator
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A feature-rich Blackjack web application built with React, featuring configurable CPU opponents with unique AI personalities, dynamic table banter, keyboard shortcuts, and a card counting training suite.
+
+## Features
+
+### Classic & Multi-Hand Blackjack
+- Full blackjack game mechanics: Deal, Hit, Stand, Double Down, and Split.
+- Real-time hand evaluation (soft vs. hard totals, blackjack detection, bust detection).
+- Dealer turn pacing and rules (dealer hits until soft 17+).
+- Chip-based wagering with stack tracking.
+- Multi-hand support for split decisions.
+- Fixed bottom control dock with active turn indicators.
+
+### CPU Opponents & AI Personalities
+- Configurable table lineup supporting 0 to 4 CPU players.
+- Four distinct AI personality archetypes with customized strategies:
+  - **Alice (Basic Strategy)**: Follows mathematically optimal basic strategy.
+  - **Bob (Risk Taker)**: Aggressive playstyle, taking high-risk hits and doubles.
+  - **Chuck (Card Counter)**: Adjusts hit/stand thresholds and bet sizing based on the shoe count.
+  - **Jim Bob (Rookie)**: Unpredictable, casual decision-making.
+- Interactive table talk with character avatars, speech bubbles, and a searchable table log.
+
+### Card Counting Training Suite
+- **Hi-Lo Counting System**: Tracks Running Count, True Count, Cards Seen, and Decks Remaining.
+- **Practice Drills**: Dedicated trainer mode to test and sharpen mental card counting speed and accuracy.
+- **Strategy Insights**: Live statistics to verify plays against optimal count-based strategy.
+
+### Keyboard Shortcuts
+- `D` or `Space`: Deal
+- `H`: Hit
+- `S`: Stand
+- `2` / `D`: Double Down
+- `P`: Split
+- `N` or `Enter`: New Round / Reset
+
+### Audio & Visuals
+- Synthesized sound effects (card deals, chips, wins, busts) via Web Audio API.
+- Responsive table layout with card animations.
+
+## Getting Started
+
+### Prerequisites
+- Node.js (v16+ recommended)
+- npm or yarn
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/jgl3hb/reactjack.git
+   cd reactjack
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Start the development server:
+   ```bash
+   npm start
+   ```
+   Open [http://localhost:3000](http://localhost:3000) to view the app in your browser.
 
 ## Available Scripts
 
-In the project directory, you can run:
+- `npm start`: Runs the development server.
+- `npm test`: Runs the test suite in interactive watch mode.
+- `npm run build`: Builds the production bundle in the `build/` directory.
 
-### `npm start`
+## Project Structure
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+```
+src/
+├── components/
+│   ├── CardCountingTrainer.jsx   # Card counting drill interface
+│   ├── CharacterAvatar.jsx       # CPU avatar portraits and status
+│   ├── ChipButton.jsx            # Betting chip selector
+│   ├── GameControls.jsx          # Bottom dock with action buttons
+│   ├── Hand.jsx                  # Player and dealer hand displays
+│   ├── SpeechBubble.jsx          # Table dialogue display
+│   └── TableTalkLog.jsx          # Scrollable table chat history
+├── hooks/
+│   ├── useBlackjackGame.js       # Game state machine and turn loop
+│   └── useDeck.js                # Shoe generation, shuffle, and draw
+├── utils/
+│   ├── cardCounting.js           # Hi-Lo calculations and metrics
+│   ├── characters.js             # CPU player profiles and setup
+│   ├── cpuLogic.js               # AI decision engine per personality
+│   ├── gameConstants.js          # Table limits and payout rules
+│   ├── personalityDialogue.js    # Contextual dialogue engine
+│   └── soundEffects.js           # Web Audio sound generator
+├── App.js                        # Main application container
+└── index.js                      # Application entry point
+```
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## License
 
-### `npm test`
-
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
-
-### `npm run build`
-
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+MIT
