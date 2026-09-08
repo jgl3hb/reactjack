@@ -15,7 +15,6 @@ import { STARTING_BANK, BET_DENOMINATIONS, GAME_STATES } from './utils/gameConst
 import {
   CPU_BEHAVIORS,
   getCpuRoundBet,
-  getCpuDisplayBetLabel,
   chooseCpuAction,
   summarizeSeatResult
 } from './utils/cpuLogic';
@@ -28,6 +27,7 @@ import {
   playChipSound,
   playWinSound,
   playBustSound,
+  playStandSound,
   setMuted,
   isMuted
 } from './utils/soundEffects';
@@ -139,12 +139,11 @@ const Blackjack = () => {
 
     setTimeout(() => {
       setSpeechBubbles((prev) => {
-        if (prev[characterId] === line) {
-          return { ...prev, [characterId]: null };
-        }
-        return prev;
+        const next = { ...prev };
+        delete next[characterId];
+        return next;
       });
-    }, 4200);
+    }, 4000);
   }, []);
 
   const drawTrackedCard = useCallback(() => {
@@ -157,9 +156,10 @@ const Blackjack = () => {
     return card;
   }, [drawCard]);
 
-  useEffect(() => {
+  const handleSetLaunchCpuCount = useCallback((count) => {
+    setLaunchCpuCount(count);
     setSelectedCpuIds([]);
-  }, [launchCpuCount]);
+  }, []);
 
   const toggleCpuIdentity = useCallback((seatId) => {
     setSelectedCpuIds((prev) => {
@@ -197,21 +197,9 @@ const Blackjack = () => {
     return SEAT_ORDER.filter((seatId) => (betLists[seatId] || []).length > 0);
   }, []);
 
-  const playDealerAndSettle = useCallback(
-    (roundSeats, finalHands, finalStatuses, finalBets, startingDealerHand = null, insuranceWagerOverride = null) => {
-      setGameState(GAME_STATES.DEALER_TURN);
-      setShowDealerCard(true);
-
-      let nextDealerHand = startingDealerHand ? [...startingDealerHand] : [...dealerHand];
-      let dealerTotal = calculateHandValue(nextDealerHand);
-
-      while (shouldDealerHit(dealerTotal, nextDealerHand, tableRules)) {
-        nextDealerHand.push(drawTrackedCard());
-        dealerTotal = calculateHandValue(nextDealerHand);
-      }
-
-      setDealerHand(nextDealerHand);
-
+  const settleRoundResults = useCallback(
+    (roundSeats, finalHands, finalStatuses, finalBets, finishedDealerHand, insuranceWagerOverride = null) => {
+      const dealerTotal = calculateHandValue(finishedDealerHand);
       const settledStatuses = { ...finalStatuses };
       const payoutBySeat = buildSeatScalar(0);
       const summary = [];
@@ -233,13 +221,13 @@ const Blackjack = () => {
           const handTotal = calculateHandValue(hand);
           const handBet = bets[handIdx] || 0;
           const playerNaturalBlackjack = hands.length === 1 && handIdx === 0 && isBlackjack(hand);
-          const dealerNaturalBlackjack = isBlackjack(nextDealerHand);
+          const dealerNaturalBlackjack = isBlackjack(finishedDealerHand);
 
           const result = determineWinner(
             handTotal,
             dealerTotal,
             hand,
-            nextDealerHand,
+            finishedDealerHand,
             handBet,
             {
               playerNaturalBlackjack,
@@ -271,7 +259,7 @@ const Blackjack = () => {
 
       const activeInsuranceBet = insuranceWagerOverride ?? insuranceBet;
       if (activeInsuranceBet > 0) {
-        const dealerNaturalBlackjack = isBlackjack(nextDealerHand);
+        const dealerNaturalBlackjack = isBlackjack(finishedDealerHand);
         payoutBySeat.human += dealerNaturalBlackjack ? activeInsuranceBet * 3 : 0;
       }
 
@@ -281,6 +269,8 @@ const Blackjack = () => {
         playWinSound();
       } else if (humanFinalStatuses.some((s) => s === 'lost' || s === 'busted')) {
         playBustSound();
+      } else {
+        playChipSound();
       }
 
       setSeatStatuses(settledStatuses);
@@ -298,8 +288,26 @@ const Blackjack = () => {
       setInsuranceBet(0);
       setPendingPeekSettlement(null);
     },
-    [dealerHand, drawTrackedCard, insuranceBet, tableRules, triggerBanter]
+    [insuranceBet, tableRules, triggerBanter]
   );
+
+  const playDealerAndSettle = useCallback(
+    (roundSeats, finalHands, finalStatuses, finalBets, startingDealerHand = null, insuranceWagerOverride = null) => {
+      setShowDealerCard(true);
+      const targetDealerHand = startingDealerHand ? [...startingDealerHand] : [...dealerHand];
+      setDealerHand(targetDealerHand);
+      settleRoundResults(roundSeats, finalHands, finalStatuses, finalBets, targetDealerHand, insuranceWagerOverride);
+    },
+    [dealerHand, settleRoundResults]
+  );
+
+  const startDealerTurn = useCallback(() => {
+    setGameState(GAME_STATES.DEALER_TURN);
+    setShowDealerCard(true);
+    playCardDealSound();
+    const dealerTotal = calculateHandValue(dealerHand);
+    setStatus(`Dealer reveals hole card for ${dealerTotal}.`);
+  }, [dealerHand]);
 
   const initialDeal = useCallback(() => {
     if (gameState !== GAME_STATES.BETTING || showLaunchConfig) return;
@@ -426,16 +434,20 @@ const Blackjack = () => {
     const handIdx = nextStatuses.human.findIndex((handStatus) => handStatus === 'playing');
     if (handIdx === -1) return;
 
+    playStandSound();
     nextStatuses.human[handIdx] = 'stood';
     setSeatStatuses(nextStatuses);
+
+    const currentHand = (seatHands.human || [])[handIdx] || [];
+    const total = calculateHandValue(currentHand);
 
     // If there are more split hands to play, keep acting, else advance turn queue
     const remainingPlaying = nextStatuses.human.some((s) => s === 'playing');
     if (!remainingPlaying) {
       setTurnQueue((prev) => prev.slice(1));
     }
-    setStatus('You stand.');
-  }, [activeSeatId, gameState, insuranceOffered, seatStatuses]);
+    setStatus(`You stand with ${total}.`);
+  }, [activeSeatId, gameState, insuranceOffered, seatHands.human, seatStatuses]);
 
   const hitHuman = useCallback(() => {
     if (gameState !== GAME_STATES.PLAYER_TURN || activeSeatId !== HUMAN_SEAT || insuranceOffered) return;
@@ -803,36 +815,79 @@ const Blackjack = () => {
     process.env.NODE_ENV === 'test' ? 10 : gameSpeed === 'fast' ? 180 : gameSpeed === 'instant' ? 0 : 550;
 
   useEffect(() => {
-    if (gameState !== GAME_STATES.PLAYER_TURN) return;
-    if (insuranceOffered || pendingPeekSettlement) return;
+    if (gameState === GAME_STATES.PLAYER_TURN) {
+      if (insuranceOffered || pendingPeekSettlement) return;
 
-    if (!activeSeatId) {
-      const roundSeats = getRoundSeats(seatBets);
-      if (roundSeats.length > 0) {
-        playDealerAndSettle(roundSeats, seatHands, seatStatuses, seatBets);
+      if (!activeSeatId) {
+        const roundSeats = getRoundSeats(seatBets);
+        if (roundSeats.length > 0) {
+          startDealerTurn();
+        }
+        return;
       }
-      return;
+
+      if (activeSeatId === HUMAN_SEAT) return;
+
+      const timer = setTimeout(() => {
+        runCpuStep(activeSeatId);
+      }, stepDelay);
+
+      return () => clearTimeout(timer);
     }
 
-    if (activeSeatId === HUMAN_SEAT) return;
+    if (gameState === GAME_STATES.DEALER_TURN) {
+      const roundSeats = getRoundSeats(seatBets);
+      if (roundSeats.length === 0) return;
 
-    const timer = setTimeout(() => {
-      runCpuStep(activeSeatId);
-    }, stepDelay);
+      // Check if any player is still in contention (not busted and not surrendered)
+      const anyActivePlayer = roundSeats.some((seatId) =>
+        (seatStatuses[seatId] || []).some((status) => status !== 'busted' && status !== 'surrendered')
+      );
 
-    return () => clearTimeout(timer);
+      const dealerTotal = calculateHandValue(dealerHand);
+
+      // If dealer needs to hit and at least one player hasn't busted
+      if (anyActivePlayer && shouldDealerHit(dealerTotal, dealerHand, tableRules)) {
+        const timer = setTimeout(() => {
+          const nextCard = drawTrackedCard();
+          playCardDealSound();
+          const nextHand = [...dealerHand, nextCard];
+          const nextTotal = calculateHandValue(nextHand);
+          setDealerHand(nextHand);
+
+          if (nextTotal > 21) {
+            playBustSound();
+            setStatus(`Dealer hits and busts with ${nextTotal}!`);
+          } else {
+            setStatus(`Dealer hits with ${nextTotal}.`);
+          }
+        }, stepDelay);
+        return () => clearTimeout(timer);
+      }
+
+      // Dealer has finished (stands, busts, or all players already busted) -> settle round
+      const timer = setTimeout(() => {
+        settleRoundResults(roundSeats, seatHands, seatStatuses, seatBets, dealerHand);
+      }, stepDelay);
+
+      return () => clearTimeout(timer);
+    }
   }, [
     activeSeatId,
+    dealerHand,
+    drawTrackedCard,
     gameState,
     getRoundSeats,
     insuranceOffered,
     pendingPeekSettlement,
-    playDealerAndSettle,
     runCpuStep,
     seatBets,
     seatHands,
     seatStatuses,
-    stepDelay
+    settleRoundResults,
+    startDealerTurn,
+    stepDelay,
+    tableRules
   ]);
 
   const resetGame = useCallback(() => {
@@ -949,7 +1004,7 @@ const Blackjack = () => {
   }, [seatConfigs]);
 
   return (
-    <div className="App min-h-screen p-3 sm:p-6 lg:p-8 pt-4 flex flex-col items-center justify-start overflow-x-hidden">
+    <div className="App min-h-screen p-3 sm:p-5 pt-3 pb-32 flex flex-col items-center justify-start overflow-x-hidden">
       {/* Top Header Bar */}
       <div className="w-full max-w-6xl flex flex-wrap items-center justify-between gap-3 mb-2 px-2">
         <div className="flex items-center gap-3">
@@ -1054,7 +1109,7 @@ const Blackjack = () => {
       )}
 
       {/* Dealer Felt Area */}
-      <div className="w-full max-w-4xl mb-4 flex flex-col items-center relative">
+      <div className="w-full max-w-4xl mb-1 flex flex-col items-center relative">
         <Hand
           cards={dealerHand}
           showAllCards={showDealerCard}
@@ -1067,31 +1122,28 @@ const Blackjack = () => {
       </div>
 
       {/* Felt Centerpiece Inscription */}
-      <div className="text-center text-yellow-500/60 uppercase tracking-widest text-[11px] sm:text-xs font-black select-none mb-3">
+      <div className="text-center text-yellow-500/60 uppercase tracking-widest text-[10px] sm:text-xs font-black select-none mb-1.5">
         Blackjack Pays 3 to 2 • Dealer Must Draw to 16 and Stand on All 17s • Insurance Pays 2 to 1
       </div>
 
       {/* CPU Setup Summary Banner */}
-      <div className="w-full max-w-5xl bg-transparent rounded-lg p-2 mb-2">
-        <div className="text-white text-sm text-center mb-0.5">CPU Setup</div>
-        <div className="text-gray-300 text-xs sm:text-sm text-center">
+      <div className="w-full max-w-5xl bg-transparent rounded-lg px-2 py-0.5 mb-1">
+        <div className="text-white text-xs text-center mb-0.5">CPU Setup</div>
+        <div className="text-gray-300 text-[11px] sm:text-xs text-center">
           {CPU_SEATS
             .filter((seatId) => seatConfigs[seatId].enabled)
             .map((seatId) => `${seatName(seatId)} (${CPU_BEHAVIORS.find((option) => option.id === seatConfigs[seatId].strategy)?.label})`)
             .join(' | ') || 'No CPUs selected'}
         </div>
-        <div className="text-[11px] text-gray-400 mt-1 text-center">
-          CPU bets: Rookie {getCpuDisplayBetLabel('rookie')}, Basic {getCpuDisplayBetLabel('basic')}, Risk {getCpuDisplayBetLabel('risk')}, Counter {getCpuDisplayBetLabel('counter')}.
-        </div>
       </div>
 
       {/* Status Banner */}
-      <div className="text-white text-base sm:text-xl mb-4 px-6 py-2.5 rounded-xl min-w-[280px] max-w-2xl text-center bg-green-950/70 backdrop-blur-md border border-green-600/50 shadow-lg">
+      <div className="text-white text-sm sm:text-lg mb-2 px-5 py-1.5 rounded-xl min-w-[260px] max-w-2xl text-center bg-green-950/70 backdrop-blur-md border border-green-600/50 shadow-lg">
         {status}
       </div>
 
       {/* Seats Grid */}
-      <div className="w-full max-w-7xl px-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 justify-items-center items-end mt-8 mb-4 min-h-[280px]">
+      <div className="w-full max-w-7xl px-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-3 justify-items-center items-end mt-2 mb-2 min-h-[190px]">
         {seatPanels.map(({ id, label }) => {
           const isCpuSeat = id !== HUMAN_SEAT;
           const char = getCharacter(id);
@@ -1160,13 +1212,35 @@ const Blackjack = () => {
                       />
                       <div className="flex justify-between items-center mt-2 border-t border-white/10 pt-1.5 text-xs">
                         <span className="text-yellow-300 font-semibold">Bet: ${bets[handIdx] || 0}</span>
-                        <span
-                          className={`font-bold uppercase tracking-wider text-[11px] ${
-                            statuses[handIdx] === 'busted' ? 'text-red-400' : 'text-white'
-                          }`}
-                        >
-                          {statuses[handIdx] || 'idle'}
-                        </span>
+                        {statuses[handIdx] === 'stood' ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-black bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 tracking-wider">
+                            STOOD
+                          </span>
+                        ) : statuses[handIdx] === 'busted' ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-black bg-red-500/20 text-red-400 border border-red-500/40 tracking-wider">
+                            BUSTED
+                          </span>
+                        ) : statuses[handIdx] === 'blackjack' ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-black bg-purple-500/20 text-purple-300 border border-purple-500/40 tracking-wider">
+                            BLACKJACK
+                          </span>
+                        ) : statuses[handIdx] === 'won' ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-black bg-green-500/20 text-green-400 border border-green-500/40 tracking-wider">
+                            WON
+                          </span>
+                        ) : statuses[handIdx] === 'lost' ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-black bg-red-500/20 text-red-400 border border-red-500/40 tracking-wider">
+                            LOST
+                          </span>
+                        ) : statuses[handIdx] === 'push' ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-black bg-blue-500/20 text-blue-300 border border-blue-500/40 tracking-wider">
+                            PUSH
+                          </span>
+                        ) : (
+                          <span className="font-bold uppercase tracking-wider text-[11px] text-white">
+                            {statuses[handIdx] || 'idle'}
+                          </span>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -1183,6 +1257,15 @@ const Blackjack = () => {
         })}
       </div>
 
+      {/* Banks Summary Bar */}
+      <div className="text-white text-xs sm:text-sm font-semibold bg-black/40 backdrop-blur-md px-6 py-2 rounded-xl text-center border border-white/10 mt-2 mb-3">
+        Banks: {seatPanels.map(({ id }) => `${seatName(id)} $${banks[id]}`).join(' | ')}
+      </div>
+
+      {insuranceBet > 0 && gameState !== GAME_STATES.GAME_OVER && (
+        <div className="text-cyan-300 text-sm font-semibold mb-3">Insurance bet: ${insuranceBet}</div>
+      )}
+
       {/* Card Counting Training Suite */}
       <CardCountingTrainer
         runningCount={runningCount}
@@ -1196,55 +1279,12 @@ const Blackjack = () => {
         onToggleQuizMode={() => setQuizMode(!quizMode)}
       />
 
-      {/* Game Action Controls */}
-      <div className="my-4 flex flex-col items-center w-full max-w-2xl mx-auto">
-        <GameControls
-          onDeal={initialDeal}
-          onHit={hitHuman}
-          onStand={standHuman}
-          onDoubleDown={doubleHuman}
-          onSplit={splitHuman}
-          onReset={resetGame}
-          canDeal={!showLaunchConfig && gameState === GAME_STATES.BETTING && pendingHumanBet > 0}
-          canHit={canHitHuman}
-          canStand={canStandHuman}
-          canDouble={canDoubleHuman}
-          canSplit={canSplitHuman}
-          gameOver={gameState === GAME_STATES.GAME_OVER}
-        />
-
-        {canSurrenderHuman && (
-          <button
-            onClick={surrenderHuman}
-            className="mt-3 w-full max-w-xs bg-gray-700 hover:bg-gray-600 text-white font-bold py-2.5 px-6 text-sm rounded-xl shadow-lg transition-transform hover:scale-105"
-          >
-            Surrender
-          </button>
-        )}
-
-        {insuranceOffered && (
-          <div className="mt-3 flex gap-3 justify-center">
-            <button
-              onClick={() => resolveInsuranceDecision(true)}
-              className="bg-cyan-700 hover:bg-cyan-600 text-white font-bold py-2.5 px-5 text-sm rounded-xl shadow-lg transition-transform hover:scale-105"
-            >
-              Take Insurance
-            </button>
-            <button
-              onClick={() => resolveInsuranceDecision(false)}
-              className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2.5 px-5 text-sm rounded-xl shadow-lg transition-transform hover:scale-105"
-            >
-              No Insurance
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Human Betting Chip Controls */}
-      {gameState === GAME_STATES.BETTING && !showLaunchConfig && (
-        <div className="mb-4 text-center">
-          <div className="text-white text-lg font-semibold mb-3 tracking-wide">Place Your Bet</div>
-          <div className="flex gap-3 sm:gap-4 flex-wrap justify-center">
+      {/* Fixed Casino Action Dock (Permanently anchored at bottom of viewport) */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-gray-900 bg-opacity-95 backdrop-blur-md border-t border-green-600 border-opacity-50 py-2 px-3 shadow-[0_-10px_30px_rgba(0,0,0,0.85)] flex flex-col items-center">
+        {/* Betting Chip Row (during BETTING state) */}
+        {gameState === GAME_STATES.BETTING && !showLaunchConfig && (
+          <div className="mb-2 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+            <span className="text-white text-xs sm:text-sm font-semibold tracking-wide mr-1">Bet:</span>
             {BET_DENOMINATIONS.map((amount) => (
               <ChipButton
                 key={amount}
@@ -1256,28 +1296,39 @@ const Blackjack = () => {
                 disabled={showLaunchConfig || banks.human < amount}
               />
             ))}
+            <span className="text-yellow-400 text-xs sm:text-sm font-bold ml-1">(${pendingHumanBet})</span>
           </div>
-          <div className="text-yellow-400 text-base font-medium mt-3">Selected bet: ${pendingHumanBet}</div>
-        </div>
-      )}
+        )}
 
-      {/* Banks Summary Bar */}
-      <div className="text-white text-xs sm:text-sm font-semibold bg-black/40 backdrop-blur-md px-6 py-2.5 rounded-xl text-center border border-white/10 mt-2 mb-4">
-        Banks: {seatPanels.map(({ id }) => `${seatName(id)} $${banks[id]}`).join(' | ')}
+        {/* Primary Action Controls */}
+        <GameControls
+          onDeal={initialDeal}
+          onHit={hitHuman}
+          onStand={standHuman}
+          onDoubleDown={doubleHuman}
+          onSplit={splitHuman}
+          onReset={resetGame}
+          onNewRound={newRound}
+          canDeal={!showLaunchConfig && gameState === GAME_STATES.BETTING && pendingHumanBet > 0}
+          canHit={canHitHuman}
+          canStand={canStandHuman}
+          canDouble={canDoubleHuman}
+          canSplit={canSplitHuman}
+          gameOver={gameState === GAME_STATES.GAME_OVER}
+          activeSeatName={activeSeatId ? seatName(activeSeatId) : null}
+          isPlayerTurn={activeSeatId === HUMAN_SEAT && gameState === GAME_STATES.PLAYER_TURN}
+          isDealerTurn={gameState === GAME_STATES.DEALER_TURN}
+          canSurrender={canSurrenderHuman}
+          onSurrender={surrenderHuman}
+          insuranceOffered={insuranceOffered}
+          insuranceCost={Math.floor(((seatBets.human || [])[0] || 0) / 2)}
+          canAffordInsurance={banks.human >= Math.floor(((seatBets.human || [])[0] || 0) / 2)}
+          onTakeInsurance={() => resolveInsuranceDecision(true)}
+          onDeclineInsurance={() => resolveInsuranceDecision(false)}
+        />
       </div>
 
-      {insuranceBet > 0 && gameState !== GAME_STATES.GAME_OVER && (
-        <div className="text-cyan-300 text-sm font-semibold mb-3">Insurance bet: ${insuranceBet}</div>
-      )}
 
-      {gameState === GAME_STATES.GAME_OVER && (
-        <button
-          onClick={newRound}
-          className="my-3 bg-green-600 hover:bg-green-500 text-white font-extrabold py-3 px-8 text-lg rounded-xl shadow-[0_0_20px_rgba(34,197,94,0.4)] transition-all duration-200 transform hover:scale-105"
-        >
-          New Round
-        </button>
-      )}
 
       {/* Table Talk Collapsible Banter Log */}
       <TableTalkLog
@@ -1298,7 +1349,7 @@ const Blackjack = () => {
               {[0, 1, 2, 3, 4].map((count) => (
                 <button
                   key={count}
-                  onClick={() => setLaunchCpuCount(count)}
+                  onClick={() => handleSetLaunchCpuCount(count)}
                   className={`px-4 py-2 rounded-xl font-bold transition-all ${
                     launchCpuCount === count
                       ? 'bg-yellow-500 text-black shadow-[0_0_12px_rgba(234,179,8,0.5)]'

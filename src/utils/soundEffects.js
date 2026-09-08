@@ -145,3 +145,35 @@ export const playBustSound = () => {
     // Ignore audio errors
   }
 };
+
+/**
+ * Table tap / stand sound (two quick subtle percussive knocks)
+ */
+export const playStandSound = () => {
+  if (soundMuted) return;
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  try {
+    [0, 0.08].forEach((offset) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(220, ctx.currentTime + offset);
+      osc.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + offset + 0.05);
+
+      gain.gain.setValueAtTime(0.18, ctx.currentTime + offset);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + offset + 0.05);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(ctx.currentTime + offset);
+      osc.stop(ctx.currentTime + offset + 0.05);
+    });
+  } catch (e) {
+    // Ignore audio errors
+  }
+};
+

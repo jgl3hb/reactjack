@@ -160,3 +160,27 @@ body {
   border-color: rgba(255, 255, 255, 0.45) !important;
   background: rgba(31, 41, 55, 0.9) !important;
 }
+
+/* ===================================
+   ACTION BUTTON ACTIVE STATES
+   =================================== */
+
+@keyframes standPulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 16px rgba(249, 115, 22, 0.8), 0 0 32px rgba(249, 115, 22, 0.4);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 24px rgba(249, 115, 22, 0.95), 0 0 45px rgba(249, 115, 22, 0.6);
+    transform: scale(1.03);
+  }
+}
+
+.stand-btn-active {
+  animation: standPulseGlow 1.6s infinite ease-in-out;
+  border: 2px solid #fdba74 !important;
+}
+
+.hit-btn-active {
+  border: 2px solid #93c5fd !important;
+}

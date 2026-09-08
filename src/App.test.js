@@ -93,4 +93,73 @@ describe('app round flow', () => {
       expect(screen.getByText(/running count/i)).toBeInTheDocument();
     });
   });
+
+  test('allows human player to stand, displays stood badge, and resolves round', async () => {
+    // Sequence:
+    // Dealer: [d07, d08] = 15 -> hits d05 = 20
+    // Human: [h10, s08] = 18 -> stands with 18 -> loses to 20
+    const sequence = ['d07', 'h10', 'd08', 's08', 'd05'];
+    const drawCard = jest.fn(() => sequence.shift() || 'd02');
+
+    useDeck.mockReturnValue({
+      drawCard,
+      resetDeck: jest.fn(),
+      cardsRemaining: 300
+    });
+
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: /start table/i }));
+    fireEvent.click(screen.getByRole('button', { name: /\$25/i }));
+    fireEvent.click(screen.getByRole('button', { name: /deal/i }));
+
+    const standBtn = await screen.findByRole('button', { name: /stand/i });
+    expect(standBtn).not.toBeDisabled();
+
+    fireEvent.click(standBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText(/STOOD/i)).toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /new round/i })).toBeInTheDocument();
+    });
+  });
+
+  test('supports keyboard shortcuts S for stand and Space for new round', async () => {
+    const sequence = ['d10', 'h10', 'd07', 's09'];
+    const drawCard = jest.fn(() => sequence.shift() || 'd02');
+
+    useDeck.mockReturnValue({
+      drawCard,
+      resetDeck: jest.fn(),
+      cardsRemaining: 300
+    });
+
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: /start table/i }));
+    fireEvent.click(screen.getByRole('button', { name: /\$25/i }));
+
+    // Deal via Space
+    fireEvent.keyDown(window, { key: ' ' });
+
+    const standBtn = await screen.findByRole('button', { name: /stand/i });
+    expect(standBtn).not.toBeDisabled();
+
+    // Stand via S key
+    fireEvent.keyDown(window, { key: 's' });
+
+    await waitFor(() => {
+      expect(screen.getByText('LOST')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /new round/i })).toBeInTheDocument();
+    });
+
+    // Start next round via Space key
+    fireEvent.keyDown(window, { key: ' ' });
+
+    await waitFor(() => {
+      expect(screen.getAllByText(/Place your bet/i).length).toBeGreaterThan(0);
+    });
+  });
 });
+
