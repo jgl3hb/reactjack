@@ -1311,38 +1311,54 @@ const Blackjack = () => {
             </div>
 
             {launchCpuCount > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
-                {CPU_SEATS.map((seatId) => {
-                  const selected = selectedCpuIds.includes(seatId);
-                  const disabled = !selected && selectedCpuIds.length >= launchCpuCount;
-                  const char = CHARACTERS[seatId];
-                  return (
-                    <button
-                      key={seatId}
-                      onClick={() => toggleCpuIdentity(seatId)}
-                      disabled={disabled}
-                      className={`text-left rounded-xl p-3 flex items-start gap-3 transition-all border ${
-                        selected
-                          ? 'bg-indigo-950/80 border-indigo-400 ring-2 ring-indigo-400 text-white shadow-lg'
-                          : 'bg-gray-800/80 border-white/5 text-gray-200 hover:bg-gray-800'
-                      } ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
-                    >
-                      <CharacterAvatar characterId={seatId} className="w-10 h-10 flex-shrink-0 mt-0.5" />
-                      <div className="min-w-0 flex-1">
-                        <div className="font-bold text-sm text-white flex items-center justify-between">
-                          <span>{seatName(seatId)}</span>
-                          <span className="text-[10px] text-yellow-400 font-semibold">"{char?.nickname}"</span>
+              <>
+                <div className="text-xs text-yellow-400 text-center mb-3 font-bold">
+                  Selected: {selectedCpuIds.length} of {launchCpuCount} CPUs
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+                  {CPU_SEATS.map((seatId) => {
+                    const selected = selectedCpuIds.includes(seatId);
+                    const disabled = !selected && selectedCpuIds.length >= launchCpuCount;
+                    const char = CHARACTERS[seatId];
+                    return (
+                      <button
+                        key={seatId}
+                        onClick={() => toggleCpuIdentity(seatId)}
+                        disabled={disabled}
+                        className={`text-left rounded-xl p-3 flex items-start gap-3 transition-all ${
+                          selected ? 'cpu-card-selected text-white' : 'cpu-card-unselected text-gray-200'
+                        } ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+                      >
+                        <div className={`rounded-full flex-shrink-0 mt-0.5 ${selected ? 'ring-2 ring-yellow-400' : ''}`}>
+                          <CharacterAvatar characterId={seatId} className="w-10 h-10" />
                         </div>
-                        <div className="text-xs text-indigo-300 font-medium">
-                          {CPU_BEHAVIORS.find((option) => option.id === DEFAULT_IDENTITY_STRATEGY[seatId])?.label}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between mb-0.5">
+                            <div className="font-bold text-sm text-white flex items-center gap-1.5 truncate">
+                              <span>{seatName(seatId)}</span>
+                              <span className="text-[10px] text-yellow-400 font-semibold truncate">"{char?.nickname}"</span>
+                            </div>
+                            {selected ? (
+                              <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-yellow-400 text-black shadow flex-shrink-0 ml-1">
+                                SELECTED
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full border border-gray-600 text-gray-400 flex-shrink-0 ml-1">
+                                + Add
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-indigo-300 font-medium">
+                            {CPU_BEHAVIORS.find((option) => option.id === DEFAULT_IDENTITY_STRATEGY[seatId])?.label}
+                          </div>
+                          <div className="text-[11px] text-gray-300 leading-snug mt-1">{char?.description}</div>
+                          <div className="text-[10px] text-gray-400 mt-1">Betting: {char?.bettingStyle}</div>
                         </div>
-                        <div className="text-[11px] text-gray-400 leading-snug mt-1">{char?.description}</div>
-                        <div className="text-[10px] text-gray-500 mt-1">Betting: {char?.bettingStyle}</div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
             )}
 
             <button
