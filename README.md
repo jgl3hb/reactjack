@@ -2,6 +2,8 @@
 
 A feature-rich Blackjack web application built with React, featuring configurable CPU opponents with unique AI personalities, dynamic table banter, keyboard shortcuts, and a card counting training suite.
 
+**Live Demo:** [https://lambent-bonbon-76f0c6.netlify.app/](https://lambent-bonbon-76f0c6.netlify.app/)
+
 ## Features
 
 ### Classic & Multi-Hand Blackjack
